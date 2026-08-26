@@ -11,8 +11,10 @@ from app.domain.models import (
 )
 from app.graphs.runtime import (
     GraphContractError,
+    build_analysis_content_graph,
     build_analysis_graph,
     build_base_assessment,
+    build_text_content_graph,
     build_text_graph,
 )
 
@@ -138,6 +140,38 @@ class FakeModel:
 
 
 class GraphRuntimeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_text_content_graph_stops_before_surface_writer(self) -> None:
+        model = FakeModel(make_observation())
+
+        result = await build_text_content_graph(model).ainvoke(  # type: ignore[arg-type]
+            {
+                "message": "자꾸 당겨 치는 느낌이야",
+                "context": make_context(),
+                "history": [],
+                "latest_analysis": None,
+            }
+        )
+
+        self.assertEqual(result["content"].evidence_mode, "text_only")
+        self.assertEqual(model.writer_calls, 0)
+
+    async def test_analysis_content_graph_stops_before_surface_writer(self) -> None:
+        model = FakeModel(make_observation())
+
+        result = await build_analysis_content_graph(model).ainvoke(  # type: ignore[arg-type]
+            {
+                "frame_paths": [Path("frame.jpg")],
+                "media_kind": "video",
+                "context": make_context(),
+                "question": "분석해줘",
+                "history": [],
+            }
+        )
+
+        self.assertEqual(result["status"], "succeeded")
+        self.assertEqual(result["content"].evidence_mode, "video_ready")
+        self.assertEqual(model.writer_calls, 0)
+
     async def test_blind_observation_excludes_question_and_feel(self) -> None:
         model = FakeModel(make_observation())
         graph = build_analysis_graph(model)  # type: ignore[arg-type]

@@ -340,3 +340,14 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - 최근 분석 존재 여부를 전달하는 `has_latest_analysis`를 텍스트 코칭 요청에 추가했다.
 - 제품 이력은 Java가 소유하고 Python은 전달받은 값으로 대화 정책만 계산한다.
 
+### LangGraph content/surface 구조 분리 — 2026-08-26
+
+- 텍스트 코칭 내용을 생성하는 `build_text_content_graph`를 사용자 문장 작성 단계와 분리했다.
+- 영상 관찰·기본 판정·코칭 내용을 생성하는 `build_analysis_content_graph`를 사용자 문장 작성 단계와 분리했다.
+- 기존 공개 API 그래프는 content graph 뒤에 기존 surface writer를 연결해 응답 동작을 유지한다.
+- 내부 API는 content graph에서 종료할 수 있어 Java의 최종 문장 조립 책임과 충돌하지 않는다.
+- `ruff check --fix`, `ruff format`, `ruff check`: 통과
+- `unittest`: 52개 통과
+- `curl GET /health`: HTTP 200
+- `curl POST /v1/analyze` 미지원 미디어: HTTP 415
+

@@ -108,8 +108,8 @@ def _guard_media_content(state: AnalysisGraphState) -> dict[str, CoachContent]:
     return {"content": content}
 
 
-def build_text_graph(model: ModelAdapter):
-    """Compile content generation and surface writing as separate graph stages."""
+def build_text_content_graph(model: ModelAdapter):
+    """Compile text coaching content without writing a user-facing message."""
 
     def apply_policy(state: TextGraphState) -> dict[str, ConversationPolicy]:
         policy = build_conversation_policy(
@@ -129,6 +129,20 @@ def build_text_graph(model: ModelAdapter):
         )
         return {"content": content}
 
+    builder = StateGraph(TextGraphState)
+    builder.add_node("response_policy", apply_policy)
+    builder.add_node("compose_content", compose_content)
+    builder.add_node("content_guard", _guard_text_content)
+    builder.add_edge(START, "response_policy")
+    builder.add_edge("response_policy", "compose_content")
+    builder.add_edge("compose_content", "content_guard")
+    builder.add_edge("content_guard", END)
+    return builder.compile()
+
+
+def build_text_graph(model: ModelAdapter):
+    """Generate coaching content, then write the user-facing message."""
+
     async def write_conversation(state: TextGraphState) -> dict[str, ConversationReply]:
         reply = await model.write_conversation(
             user_message=state["message"],
@@ -147,22 +161,18 @@ def build_text_graph(model: ModelAdapter):
         return {"reply": reply, "interaction_meta": interaction_meta}
 
     builder = StateGraph(TextGraphState)
-    builder.add_node("response_policy", apply_policy)
-    builder.add_node("compose_content", compose_content)
-    builder.add_node("content_guard", _guard_text_content)
+    builder.add_node("content_pipeline", build_text_content_graph(model))
     builder.add_node("conversation_writer", write_conversation)
     builder.add_node("surface_guard", guard_surface)
-    builder.add_edge(START, "response_policy")
-    builder.add_edge("response_policy", "compose_content")
-    builder.add_edge("compose_content", "content_guard")
-    builder.add_edge("content_guard", "conversation_writer")
+    builder.add_edge(START, "content_pipeline")
+    builder.add_edge("content_pipeline", "conversation_writer")
     builder.add_edge("conversation_writer", "surface_guard")
     builder.add_edge("surface_guard", END)
     return builder.compile()
 
 
-def build_analysis_graph(model: ModelAdapter):
-    """Freeze question-blind visual assessment before coaching composition."""
+def build_analysis_content_graph(model: ModelAdapter):
+    """Freeze visual evidence and compose content without surface writing."""
 
     async def observe(state: AnalysisGraphState) -> dict[str, VisionObservation]:
         context = state["context"]
@@ -194,6 +204,44 @@ def build_analysis_graph(model: ModelAdapter):
         )
         return {"content": content}
 
+    def complete_content(
+        state: AnalysisGraphState,
+    ) -> dict[str, Literal["succeeded", "limited"]]:
+        return {"status": "limited" if state["media_kind"] == "photo" else "succeeded"}
+
+    builder = StateGraph(AnalysisGraphState)
+    builder.add_node("vision_observe", observe)
+    builder.add_node("observation_guard", _guard_observation)
+    builder.add_node("reject_media", _reject_media)
+    builder.add_node("domain_assess", _domain_assess)
+    builder.add_node("freeze_base_assessment", _freeze_base_assessment)
+    builder.add_node("response_policy", apply_policy)
+    builder.add_node("compose_content", compose_content)
+    builder.add_node("content_guard", _guard_media_content)
+    builder.add_node("complete_content", complete_content)
+    builder.add_edge(START, "vision_observe")
+    builder.add_edge("vision_observe", "observation_guard")
+    builder.add_conditional_edges(
+        "observation_guard",
+        _route_observation,
+        {"reject": "reject_media", "assess": "domain_assess"},
+    )
+    builder.add_edge("reject_media", END)
+    builder.add_edge("domain_assess", "freeze_base_assessment")
+    builder.add_edge("freeze_base_assessment", "response_policy")
+    builder.add_edge("response_policy", "compose_content")
+    builder.add_edge("compose_content", "content_guard")
+    builder.add_edge("content_guard", "complete_content")
+    builder.add_edge("complete_content", END)
+    return builder.compile()
+
+
+def build_analysis_graph(model: ModelAdapter):
+    """Generate frozen analysis content, then write the user-facing message."""
+
+    def route_surface(state: AnalysisGraphState) -> str:
+        return "reject" if state["status"] == "rejected" else "write"
+
     async def write_conversation(state: AnalysisGraphState) -> dict[str, ConversationReply]:
         conversation = await model.write_conversation(
             user_message=state["question"] or "스윙 전체를 봐줘",
@@ -214,38 +262,22 @@ def build_analysis_graph(model: ModelAdapter):
             content=state["content"],
             conversation=conversation,
         )
-        status = "limited" if state["media_kind"] == "photo" else "succeeded"
         return {
             "conversation": conversation,
             "reply": reply,
-            "status": status,
             "interaction_meta": interaction_meta,
         }
 
     builder = StateGraph(AnalysisGraphState)
-    builder.add_node("vision_observe", observe)
-    builder.add_node("observation_guard", _guard_observation)
-    builder.add_node("reject_media", _reject_media)
-    builder.add_node("domain_assess", _domain_assess)
-    builder.add_node("freeze_base_assessment", _freeze_base_assessment)
-    builder.add_node("response_policy", apply_policy)
-    builder.add_node("compose_content", compose_content)
-    builder.add_node("content_guard", _guard_media_content)
+    builder.add_node("content_pipeline", build_analysis_content_graph(model))
     builder.add_node("conversation_writer", write_conversation)
     builder.add_node("surface_guard", guard_surface)
-    builder.add_edge(START, "vision_observe")
-    builder.add_edge("vision_observe", "observation_guard")
+    builder.add_edge(START, "content_pipeline")
     builder.add_conditional_edges(
-        "observation_guard",
-        _route_observation,
-        {"reject": "reject_media", "assess": "domain_assess"},
+        "content_pipeline",
+        route_surface,
+        {"reject": END, "write": "conversation_writer"},
     )
-    builder.add_edge("reject_media", END)
-    builder.add_edge("domain_assess", "freeze_base_assessment")
-    builder.add_edge("freeze_base_assessment", "response_policy")
-    builder.add_edge("response_policy", "compose_content")
-    builder.add_edge("compose_content", "content_guard")
-    builder.add_edge("content_guard", "conversation_writer")
     builder.add_edge("conversation_writer", "surface_guard")
     builder.add_edge("surface_guard", END)
     return builder.compile()
