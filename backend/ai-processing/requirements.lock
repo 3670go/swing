@@ -109,7 +109,7 @@ markupsafe==3.0.3
     # via mako
 multidict==6.7.1
     # via yarl
-orjson==3.12.0
+orjson==3.11.7
     # via
     #   langgraph-sdk
     #   langsmith

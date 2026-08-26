@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.133,<1",
     "langgraph>=1.1.5,<2",
     "google-genai>=1,<2",
+    "orjson>=3.11.7,<3.12",
     "psycopg[binary]>=3.2,<4",
     "pydantic-settings>=2.13,<3",
     "python-multipart>=0.0.22,<1",

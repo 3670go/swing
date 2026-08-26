@@ -42,6 +42,8 @@
 - 설치 기준 파일: `requirements.lock`
 - 개발용 선택 의존성: `ruff` (`pyproject.toml`의 `dev` extra)
 
+Windows 실행 환경에서는 Application Control 호환을 위해 `orjson`을 `>=3.11.7,<3.12`로 제한합니다. 이 범위를 올릴 때는 단위 테스트에서 DLL 로딩을 먼저 확인합니다.
+
 ## 처음 설정
 
 PowerShell 기준입니다.

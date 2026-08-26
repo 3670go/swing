@@ -320,7 +320,7 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 ### 다음 분리 순서
 
 1. 계약문서 기준 커밋 — 완료 (`d728dc4`)
-2. 기존 Python 코드를 `backend/ai-processing`으로 이동 — 진행
+2. 기존 Python 코드를 `backend/ai-processing`으로 이동 — 완료 (`80d2de1`)
 3. Java/Spring Boot 프로젝트 생성
 4. Java/Python 내부 API 구현
 5. 제품 DB 소유권 이전
