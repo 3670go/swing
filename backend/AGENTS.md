@@ -19,7 +19,7 @@
 
 - Java/Spring Boot 작업 기본 경로: `domain-application/`
 - Python/FastAPI 목표 작업 경로: `ai-processing/`
-- 현재 Python 코드는 이동 완료 전까지 `backend/app`, `backend/tests`가 실행 기준이다.
+- 현재 Python 실행 기준은 `backend/ai-processing/app`, `backend/ai-processing/tests`다.
 - 공통 계약 변경은 Java 또는 Python 구현과 분리한다.
 - 다른 작업 공간의 코드는 명시적 승인 없이 수정하지 않는다.
 

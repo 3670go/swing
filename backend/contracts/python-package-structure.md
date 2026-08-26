@@ -5,7 +5,7 @@
 
 ## 전환 상태
 
-현재 FastAPI 코드는 아직 `backend/app`, `backend/tests` 등에 있다. 이동 task가 완료되기 전까지 현재 경로가 실행 기준이다. 폴더 이동과 내부 패키지 개편은 같은 task에서 진행하지 않는다.
+현재 FastAPI 코드는 `backend/ai-processing/app`, `backend/ai-processing/tests`로 이동했다. 내부 API 구현과 공개 API 제거는 후속 task이며, 현재 단계에서는 기존 동작을 유지한다.
 
 ## 확정된 책임
 

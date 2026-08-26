@@ -44,14 +44,14 @@
 PowerShell 기준입니다.
 
 ```powershell
-cd backend
+cd backend\ai-processing
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --requirement requirements.lock
-Copy-Item .env.example .env
+Copy-Item ..\.env.example ..\.env
 ```
 
-`.env`에 필요한 서버 설정을 채운 뒤 migration과 서버 실행을 진행합니다.
+`backend\.env`에 필요한 서버 설정을 채운 뒤 migration과 서버 실행을 진행합니다.
 
 ```powershell
 python -m alembic upgrade head
@@ -90,7 +90,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 ### Backend
 
 ```powershell
-cd backend
+cd backend\ai-processing
 python -m unittest discover -s tests -q
 python -m ruff check .
 ```
