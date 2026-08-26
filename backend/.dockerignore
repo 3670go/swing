@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.venv/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+tests/
+migrations/
+alembic.ini
