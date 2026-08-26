@@ -37,6 +37,8 @@ Python은 공개 API, 사용자 식별, 권한, 이력 조회, 삭제를 처리�
 
 요청·응답의 필드, enum, 길이 제한은 `internal-api.openapi.yaml`을 따른다. Java와 Python 테스트는 `fixtures/`의 같은 JSON을 사용한다.
 
+텍스트 코칭 요청에는 최근 assistant 메시지의 `interaction_meta`와 `has_latest_analysis`를 포함한다. 이는 질문·칭찬 반복을 제한하는 대화 정책 입력이며 제품 이력의 소유권은 계속 Java에 있다.
+
 ## 데이터 소유권
 
 ### Java가 소유한다

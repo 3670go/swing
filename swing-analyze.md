@@ -334,3 +334,9 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - `curl GET /actuator/health`: HTTP 200, `UP`
 - 공개 `/v1/*` API와 DB 기능은 아직 추가하지 않았다.
 
+### 내부 채팅 계약 보정 — 2026-08-26
+
+- 기존 대화 정책 재현에 필요한 `HistoryMessage.interaction_meta`를 내부 계약에 추가했다.
+- 최근 분석 존재 여부를 전달하는 `has_latest_analysis`를 텍스트 코칭 요청에 추가했다.
+- 제품 이력은 Java가 소유하고 Python은 전달받은 값으로 대화 정책만 계산한다.
+

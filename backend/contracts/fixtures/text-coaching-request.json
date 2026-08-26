@@ -11,5 +11,6 @@
     "video_type": null,
     "shot_result": "pull"
   },
-  "history": []
+  "history": [],
+  "has_latest_analysis": false
 }
