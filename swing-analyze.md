@@ -384,6 +384,17 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - Java 내부 Client를 HTTP/1.1로 고정해 전송 프로토콜 불일치를 수정했다.
 - Java Client → Python `POST /internal/v1/analyses`: HTTP 422 구조화 오류를 정상 역직렬화했다.
 - Java Actuator → Python `GET /internal/health`: `aiProcessing=UP`을 확인했다.
+
+### 제품 DB migration 소유권 이전 — 2026-08-26
+
+- Python SQLAlchemy 모델과 Alembic 0001~0003의 6개 제품 테이블을 대조했다.
+- Java에 같은 schema의 Flyway V1~V3와 JPA entity/repository를 추가했다.
+- 실제 Supabase의 Alembic revision이 `0003_chat_interaction_metadata (head)`임을 확인했다.
+- Flyway schema history를 version 3 baseline으로 기록했으며 기존 제품 테이블에는 migration을 재실행하지 않았다.
+- 실제 Supabase 연결에서 Flyway version 3, Hibernate schema validation, Actuator HTTP 200을 확인했다.
+- Java repository의 소유권·이력·메시지 저장 조회는 H2 integration test로 검증했다.
+- Python은 공개 API 전환 전까지 런타임 제품 DB 접근만 유지하고 새 Alembic migration을 만들지 않는다.
+- 발견된 결함: 같은 transaction의 `created_at DEFAULT now()` 값이 같을 수 있어 메시지 순서가 불명확하다. 공개 채팅 API 전환 전에 별도 기능 migration으로 순서 키를 추가한다.
 - `curl GET http://127.0.0.1:18080/actuator/health`: HTTP 200, 전체 `UP`
 - 통합 검증은 허용되지 않은 fixture host에서 모델 호출 전에 종료해 Gemini/Supabase 비용이 발생하지 않았다.
 

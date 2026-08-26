@@ -47,3 +47,14 @@ Client는 `POST /internal/v1/analyses`, `POST /internal/v1/coaching/text`, `GET 
 Client가 활성화되면 Actuator의 `aiProcessing` health component가 실제 Python health를 확인한다. JDK HttpClient는 Uvicorn과의 호환을 위해 HTTP/1.1로 고정한다.
 
 공통 계약은 `..\contracts\`를 따른다.
+
+## 제품 DB 전환
+
+Java는 기존 Python/Alembic과 같은 Supabase Postgres 스키마를 JPA와 Flyway로 관리한다.
+연결에는 `JDBC_DATABASE_URL`, `JDBC_DATABASE_USERNAME`, `JDBC_DATABASE_PASSWORD`를 사용한다.
+
+Flyway는 기본적으로 꺼져 있다. 새 DB에서는 `DB_MIGRATION_ENABLED=true`로 V1부터 적용한다.
+기존 Alembic DB에서는 먼저 Alembic revision이 `0003_chat_interaction_metadata`인지 확인한다.
+확인된 경우에만 최초 한 번 `DB_MIGRATION_ENABLED=true`, `DB_BASELINE_ON_MIGRATE=true`,
+`DB_BASELINE_VERSION=3`으로 기준선을 기록하고, 다음 실행부터 baseline 설정을 다시 끈다.
+revision 확인 없이 baseline을 만들거나 기존 DB에 V1을 실행하지 않는다.

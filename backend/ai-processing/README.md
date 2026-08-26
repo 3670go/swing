@@ -26,7 +26,7 @@
 - `app/graphs/`: LangGraph 기반 텍스트/미디어 분석 실행 흐름
 - `app/repositories/`: DB 저장·조회 계층
 - `app/services/`: 업로드 의도 생성 등 도메인 서비스
-- `migrations/`: Alembic migration
+- `migrations/`: Java DB 전환 전 생성 이력 보존용 Alembic migration
 - `tests/`: `unittest` 기반 백엔드 테스트
 
 ## 개발 환경
@@ -73,11 +73,9 @@ Copy-Item ..\.env.example ..\.env
 
 ## DB migration
 
-`.env`의 `DATABASE_URL` 설정 후 실행합니다.
-
-```powershell
-python -m alembic upgrade head
-```
+제품 DB migration 소유권은 Java `backend/domain-application`의 Flyway로 이전했습니다.
+Python의 Alembic 파일은 전환 기간의 과거 이력 대조용으로만 유지하며 새 migration을 추가하거나
+`alembic upgrade`를 실행하지 않습니다. Python 공개 API가 남아 있는 동안에는 런타임 DB 접근만 유지합니다.
 
 ## 로컬 실행
 
