@@ -44,4 +44,6 @@ PowerShell 기준이다.
 
 Client는 `POST /internal/v1/analyses`, `POST /internal/v1/coaching/text`, `GET /internal/health`만 호출한다. 자동 재시도는 하지 않으며 Python의 구조화된 오류를 Java 예외로 변환한다.
 
+Client가 활성화되면 Actuator의 `aiProcessing` health component가 실제 Python health를 확인한다. JDK HttpClient는 Uvicorn과의 호환을 위해 HTTP/1.1로 고정한다.
+
 공통 계약은 `..\contracts\`를 따른다.

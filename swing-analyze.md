@@ -378,3 +378,12 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - Java 기동 후 `curl GET /actuator/health`: HTTP 200, `UP`
 - 아직 Java → 실제 Python 프로세스 호출은 실행하지 않았다.
 
+### Java/Python 내부 API 통합 검증 — 2026-08-26
+
+- JDK HttpClient의 기본 HTTP/2 upgrade가 Uvicorn에서 거부되는 것을 실제 연결에서 확인했다.
+- Java 내부 Client를 HTTP/1.1로 고정해 전송 프로토콜 불일치를 수정했다.
+- Java Client → Python `POST /internal/v1/analyses`: HTTP 422 구조화 오류를 정상 역직렬화했다.
+- Java Actuator → Python `GET /internal/health`: `aiProcessing=UP`을 확인했다.
+- `curl GET http://127.0.0.1:18080/actuator/health`: HTTP 200, 전체 `UP`
+- 통합 검증은 허용되지 않은 fixture host에서 모델 호출 전에 종료해 Gemini/Supabase 비용이 발생하지 않았다.
+

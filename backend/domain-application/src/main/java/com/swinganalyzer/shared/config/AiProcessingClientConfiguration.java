@@ -5,6 +5,7 @@ import java.time.Duration;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestClient;
 
 import com.swinganalyzer.analysis.application.AiProcessingClient;
 import com.swinganalyzer.analysis.infrastructure.aiclient.RestAiProcessingClient;
+import com.swinganalyzer.analysis.infrastructure.aiclient.AiProcessingHealthIndicator;
 
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
@@ -27,7 +29,10 @@ public class AiProcessingClientConfiguration {
 	AiProcessingClient aiProcessingClient(AiProcessingProperties properties) {
 		validate(properties);
 		Duration timeout = Duration.ofSeconds(properties.getTimeoutSeconds());
-		HttpClient httpClient = HttpClient.newBuilder().connectTimeout(timeout).build();
+		HttpClient httpClient = HttpClient.newBuilder()
+				.connectTimeout(timeout)
+				.version(HttpClient.Version.HTTP_1_1)
+				.build();
 		JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
 		requestFactory.setReadTimeout(timeout);
 
@@ -42,6 +47,11 @@ public class AiProcessingClientConfiguration {
 						.withJsonConverter(new JacksonJsonHttpMessageConverter(objectMapper)))
 				.build();
 		return new RestAiProcessingClient(restClient, objectMapper);
+	}
+
+	@Bean(name = "aiProcessing")
+	HealthIndicator aiProcessingHealthIndicator(AiProcessingClient client) {
+		return new AiProcessingHealthIndicator(client);
 	}
 
 	private static void validate(AiProcessingProperties properties) {
