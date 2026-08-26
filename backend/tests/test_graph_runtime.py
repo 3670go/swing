@@ -2,18 +2,18 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-from app.graphs.runtime import (
-    GraphContractError,
-    build_analysis_graph,
-    build_base_assessment,
-    build_text_graph,
-)
-from app.schemas import (
+from app.domain.models import (
     CoachContent,
     ConversationReply,
     ObservationItem,
     ShotContext,
     VisionObservation,
+)
+from app.graphs.runtime import (
+    GraphContractError,
+    build_analysis_graph,
+    build_base_assessment,
+    build_text_graph,
 )
 
 CONVERSATION_FIXTURES = (

@@ -1,7 +1,6 @@
-import uuid
 from typing import Literal
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 AssessmentCategory = Literal[
     "impact_structure",
@@ -33,18 +32,6 @@ class ShotContext(BaseModel):
     short_game_type: str | None = Field(default=None, max_length=64)
     video_type: str | None = Field(default=None, max_length=64)
     shot_result: str | None = Field(default=None, max_length=128)
-
-
-class ChatRequest(BaseModel):
-    anonymous_session_id: str = Field(min_length=16, max_length=128)
-    conversation_id: uuid.UUID | None = None
-    message: str = Field(min_length=1, max_length=4000)
-    context: ShotContext
-
-
-class ChatResponse(BaseModel):
-    conversation_id: uuid.UUID
-    reply: str
 
 
 class ObservationItem(BaseModel):
@@ -104,10 +91,7 @@ class CoachContent(BaseModel):
     evidence_boundary: str = Field(min_length=1, max_length=300)
     cannot_determine: list[str] = Field(max_length=8)
     observation_indexes: list[int] = Field(max_length=12)
-    base_assessment_hash: str | None = Field(
-        default=None,
-        pattern=r"^[0-9a-f]{64}$",
-    )
+    base_assessment_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     single_change: str | None = Field(default=None, max_length=500)
     verification: str | None = Field(default=None, max_length=500)
     preserve_candidate: str | None = Field(default=None, max_length=220)
@@ -148,52 +132,8 @@ class ConversationReply(BaseModel):
 
 
 class CoachReply(BaseModel):
-    """Validated analysis bundle returned by media endpoints."""
+    """Validated analysis bundle returned by media analysis."""
 
     base_assessment: BaseAssessment
     content: CoachContent
     conversation: ConversationReply
-
-
-class AnalysisResponse(BaseModel):
-    conversation_id: uuid.UUID
-    analysis_run_id: uuid.UUID
-    status: Literal["succeeded", "limited", "rejected"]
-    observation: VisionObservation
-    reply: CoachReply | None
-
-
-class OpenAIFileReference(BaseModel):
-    """Temporary conversation file reference injected by a Custom GPT Action."""
-
-    name: str = Field(min_length=1, max_length=255)
-    id: str = Field(min_length=1, max_length=255)
-    mime_type: str = Field(min_length=1, max_length=128)
-    download_link: AnyHttpUrl
-
-
-class ActionAnalyzeRequest(BaseModel):
-    """JSON bridge from Custom GPT uploads to the existing media analyzer."""
-
-    session_id: str = Field(min_length=16, max_length=128)
-    openai_file_id_refs: list[OpenAIFileReference] = Field(
-        min_length=1,
-        max_length=10,
-        alias="openaiFileIdRefs",
-    )
-    question: str = Field(default="", max_length=4000)
-    context: ShotContext
-    conversation_id: uuid.UUID | None = None
-
-
-class HistoryItem(BaseModel):
-    analysis_run_id: uuid.UUID
-    status: str
-    media_kind: str
-    club: str
-    camera_view: str
-    created_at: str
-
-
-class HistoryResponse(BaseModel):
-    items: list[HistoryItem]

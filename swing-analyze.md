@@ -44,7 +44,7 @@
 
 확인된 검증 상태:
 
-- `python -m unittest discover -s tests -q`: 45개 테스트 통과
+- `python -m unittest discover -s tests -q`: 50개 테스트 통과
 - `python -m ruff check .`: 통과
 - HTTP smoke test에서 경량 API, validation, auth gate, delete not-found, 격리 서버 기준 `/v1/chat` E2E 200 확인
 - 기존 `127.0.0.1:8000` 서버에서 `/v1/chat` 502가 한 번 있었고, Gemini 429 retry 로그가 관찰됨
@@ -257,4 +257,42 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - 책임분리와 기능변경을 동시에 하지 않는다.
 - Java/Spring Boot 서버 생성과 FastAPI 책임분리를 동시에 하지 않는다.
 - API 동작 변경 없이 구조적 책임분리부터 진행한다.
+
+## backend → api-architecture-refactor → responsibility-separation
+
+### 변경 내용 — 2026-08-26
+
+구조 변경과 기능 변경을 분리해 순차 적용했다.
+
+구조 변경:
+
+- `/v1/analyze` 오케스트레이션을 `StartSwingAnalysisUseCase`로 이동했다.
+- 업로드 분류, 임시 저장, 크기 제한, SHA-256 계산을 `UploadedMediaPreparer`로 분리했다.
+- FFmpeg 프레임 추출을 `FrameExtractor` Port와 `FfmpegFrameExtractor` Adapter로 분리했다.
+- LangGraph 실행을 `AiSwingAnalyzer` Port와 `LangGraphSwingAnalyzer` Adapter로 분리했다.
+- 영상 근거 제한, BaseAssessment 생성·동결, CoachContent 검증을 Domain Policy로 이동했다.
+- `ChatRuntimeRepository`를 사용자·대화, 메시지, 스윙 분석 Repository로 분리했다.
+- 분석 실패를 `AnalysisFailurePolicy`로 통합하고 API 계층에서 HTTP 상태로 변환하도록 변경했다.
+- API DTO와 분석 Domain Model을 분리했다.
+- 분석 실행 상태 전이를 `AnalysisStatusPolicy`로 분리했다.
+
+별도 기능 변경:
+
+- 사용자 질문은 `user_question`에만 저장하고 `user_feel`에 자동 복사하지 않도록 변경했다.
+
+### 테스트 내용 — 2026-08-26
+
+- `python -m ruff check --fix app tests`: 통과
+- `python -m ruff format app tests`: 변경 없음
+- `python -m ruff check .`: 통과
+- `python -m unittest discover -s tests -q`: 50개 통과
+- Fake Adapter 기반 `StartSwingAnalysisUseCase` 정상 사진 분석 경로: 통과
+- `curl GET /health`: HTTP 200
+- `curl POST /v1/analyze` 미지원 미디어: HTTP 415, `MEDIA_TYPE_UNSUPPORTED`
+- `curl POST /v1/analyze` 빈 이미지: HTTP 422, `MEDIA_EMPTY`
+
+검증 공백:
+
+- 실제 Supabase DB·Storage와 Gemini를 사용하는 유료 `/v1/analyze` 성공 경로는 실행하지 않았다.
+- 실제 미디어 Provider E2E는 별도 비용 테스트 단계로 남아 있다.
 

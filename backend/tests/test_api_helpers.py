@@ -9,13 +9,12 @@ from app.api import (
     app,
     build_custom_gpt_action_schema,
     classify_media,
-    render_coach_reply,
-    render_conversation_reply,
     validate_action_download_url,
     verify_action_api_key,
 )
-from app.schemas import (
-    ActionAnalyzeRequest,
+from app.api_schemas import ActionAnalyzeRequest
+from app.conversation_rendering import render_coach_reply, render_conversation_reply
+from app.domain.models import (
     AssessmentFinding,
     BaseAssessment,
     CoachContent,

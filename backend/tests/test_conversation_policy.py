@@ -1,7 +1,7 @@
 import unittest
 
 from app.conversation_policy import build_conversation_policy, enforce_conversation_policy
-from app.schemas import CoachContent, ConversationReply
+from app.domain.models import CoachContent, ConversationReply
 
 
 def make_content(*, preserve: bool = False) -> CoachContent:

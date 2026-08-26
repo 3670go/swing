@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
-from app.schemas import CoachContent, ConversationReply
+from app.domain.models import CoachContent, ConversationReply
 
 InviteMode = Literal[
     "compare_good_bad",

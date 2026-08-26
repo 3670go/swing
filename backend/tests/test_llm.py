@@ -6,8 +6,8 @@ from typing import Any
 from google.genai import errors
 
 from app.config import Settings
+from app.domain.models import CoachContent, ConversationReply, ShotContext, VisionObservation
 from app.llm import GeminiModelAdapter, ModelCallError, ModelNotConfiguredError
-from app.schemas import CoachContent, ConversationReply, ShotContext, VisionObservation
 
 
 def make_settings(*, api_key: str | None = "gemini-test-key") -> Settings:

@@ -2,11 +2,8 @@ import asyncio
 import hashlib
 import logging
 import secrets
-import tempfile
 import uuid
-from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
 from tempfile import SpooledTemporaryFile
 from typing import Annotated, Any
 from urllib.error import HTTPError, URLError
@@ -17,31 +14,31 @@ from urllib.request import Request as UrlRequest
 from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
-from sqlalchemy import select
 from starlette.datastructures import Headers
 
-from app.config import Settings, get_settings
-from app.database import Database
-from app.graphs.runtime import GraphContractError, build_analysis_graph, build_text_graph
-from app.llm import GeminiModelAdapter, ModelCallError, ModelNotConfiguredError
-from app.media_processing import MediaProcessingError, extract_video_frames
-from app.models import OwnerContext
-from app.repositories.chat_runtime import (
-    ChatRuntimeRepository,
-    OwnerAccessError,
-)
-from app.schemas import (
+from app.adapters.ffmpeg_frame_extractor import FfmpegFrameExtractor
+from app.adapters.langgraph_swing_analyzer import LangGraphSwingAnalyzer
+from app.api_schemas import (
     ActionAnalyzeRequest,
     AnalysisResponse,
     ChatRequest,
     ChatResponse,
-    CoachReply,
-    ConversationReply,
     HistoryItem,
     HistoryResponse,
-    ShotContext,
-    VisionObservation,
 )
+from app.config import Settings, get_settings
+from app.conversation_rendering import render_conversation_reply
+from app.database import Database
+from app.domain.models import ShotContext
+from app.graphs.runtime import GraphContractError, build_text_graph
+from app.llm import GeminiModelAdapter, ModelCallError, ModelNotConfiguredError
+from app.repositories.chat_messages import ChatMessageRepository
+from app.repositories.owner_conversations import OwnerAccessError, OwnerConversationRepository
+from app.repositories.swing_analyses import SwingAnalysisRepository
+from app.services.analysis_failures import AnalysisUseCaseError
+from app.services.media_preparation import MediaPreparationError
+from app.services.media_preparation import classify_media as classify_upload
+from app.services.swing_analysis import StartSwingAnalysisUseCase
 from app.storage import StorageSigningError, SupabaseMediaStore
 
 CONTENT_TYPE_SUFFIXES = {
@@ -70,24 +67,25 @@ class NoRedirectHandler(HTTPRedirectHandler):
         return None
 
 
-@dataclass(frozen=True)
-class PreparedMedia:
-    """One validated upload saved in the request-scoped temporary directory."""
-
-    path: Path
-    content_type: str
-    media_kind: str
-    sha256: str
-
-
 def classify_media(content_type: str) -> tuple[str, str]:
     """Return the canonical media kind and suffix for a supported MIME type."""
-    normalized = content_type.lower()
-    if normalized in settings.allowed_photo_content_types:
-        return "photo", CONTENT_TYPE_SUFFIXES[normalized]
-    if normalized in settings.allowed_video_content_types:
-        return "video", CONTENT_TYPE_SUFFIXES[normalized]
-    raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "MEDIA_TYPE_UNSUPPORTED")
+    try:
+        return classify_upload(content_type, settings)
+    except MediaPreparationError as error:
+        raise _analysis_http_exception(error.error_code, error.kind) from error
+
+
+def _analysis_http_exception(error_code: str, failure_kind: str) -> HTTPException:
+    status_by_kind = {
+        "invalid_input": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "unsupported_media": status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        "too_large": status.HTTP_413_CONTENT_TOO_LARGE,
+        "not_found": status.HTTP_404_NOT_FOUND,
+        "media_decode": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "dependency": status.HTTP_502_BAD_GATEWAY,
+        "not_configured": status.HTTP_503_SERVICE_UNAVAILABLE,
+    }
+    return HTTPException(status_by_kind[failure_kind], error_code)
 
 
 def anonymous_session_hash(anonymous_session_id: str) -> str:
@@ -164,19 +162,6 @@ def _download_action_upload(
     )
 
 
-def render_conversation_reply(reply: ConversationReply) -> str:
-    parts = [reply.message.strip()]
-    if reply.positive_feedback:
-        parts.append(reply.positive_feedback.strip())
-    if reply.follow_up_question:
-        parts.append(reply.follow_up_question.strip())
-    return "\n\n".join(parts)
-
-
-def render_coach_reply(reply: CoachReply) -> str:
-    return render_conversation_reply(reply.conversation)
-
-
 @lru_cache(maxsize=1)
 def get_database() -> Database:
     return Database(get_settings())
@@ -192,7 +177,23 @@ def get_media_store() -> SupabaseMediaStore:
     return SupabaseMediaStore(get_settings())
 
 
-repository = ChatRuntimeRepository()
+@lru_cache(maxsize=1)
+def get_analysis_use_case() -> StartSwingAnalysisUseCase:
+    return StartSwingAnalysisUseCase(
+        settings=settings,
+        database=get_database(),
+        owner_conversations=owner_conversations,
+        messages=messages,
+        analyses=analyses,
+        media_store=get_media_store(),
+        analyzer=LangGraphSwingAnalyzer(get_model()),
+        frame_extractor=FfmpegFrameExtractor(),
+    )
+
+
+owner_conversations = OwnerConversationRepository()
+messages = ChatMessageRepository()
+analyses = SwingAnalysisRepository()
 settings: Settings = get_settings()
 app = FastAPI(title="Swing Analyzer API", version="0.1.0")
 app.add_middleware(
@@ -227,21 +228,21 @@ async def chat(request: ChatRequest) -> ChatResponse:
     owner_hash = anonymous_session_hash(request.anonymous_session_id)
     try:
         with database.session() as session:
-            owner = repository.get_or_create_owner(session, owner_hash)
-            conversation = repository.get_or_create_conversation(
+            owner = owner_conversations.get_or_create_owner(session, owner_hash)
+            conversation = owner_conversations.get_or_create_conversation(
                 session,
                 owner=owner,
                 conversation_id=request.conversation_id,
                 context=request.context,
             )
-            repository.add_message(
+            messages.add_message(
                 session,
                 conversation_id=conversation.id,
                 role="user",
                 content=request.message,
             )
-            history = repository.recent_messages(session, conversation.id)
-            latest_analysis = repository.latest_reply(session, conversation.id)
+            history = messages.recent_messages(session, conversation.id)
+            latest_analysis = messages.latest_reply(session, conversation.id)
             conversation_id = conversation.id
     except OwnerAccessError as error:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(error)) from error
@@ -264,7 +265,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
     reply = result["reply"]
     rendered = render_conversation_reply(reply)
     with database.session() as session:
-        repository.add_message(
+        messages.add_message(
             session,
             conversation_id=conversation_id,
             role="assistant",
@@ -272,21 +273,6 @@ async def chat(request: ChatRequest) -> ChatResponse:
             interaction_meta=result.get("interaction_meta"),
         )
     return ChatResponse(conversation_id=conversation_id, reply=rendered)
-
-
-async def _save_upload(upload: UploadFile, target: Path, max_bytes: int | None) -> tuple[int, str]:
-    digest = hashlib.sha256()
-    size = 0
-    with target.open("wb") as output:
-        while chunk := await upload.read(1024 * 1024):
-            size += len(chunk)
-            if max_bytes is not None and size > max_bytes:
-                raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "VIDEO_TOO_LARGE")
-            digest.update(chunk)
-            output.write(chunk)
-    if size == 0:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "MEDIA_EMPTY")
-    return size, digest.hexdigest()
 
 
 @app.post("/v1/analyze", response_model=AnalysisResponse)
@@ -298,194 +284,27 @@ async def analyze(
     conversation_id: Annotated[uuid.UUID | None, Form()] = None,
 ) -> AnalysisResponse:
     """Store private media objects, observe them blind, then compose one validated reply."""
-    model = get_model()
-    if not model.is_configured:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "GEMINI_API_KEY is not configured")
     try:
         context = ShotContext.model_validate_json(context_json)
     except ValidationError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "INVALID_SHOT_CONTEXT") from error
 
-    if not files:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "MEDIA_EMPTY")
-    classified_uploads = [
-        (upload, (upload.content_type or "").lower(), *classify_media(upload.content_type or ""))
-        for upload in files
-    ]
-    media_kind = (
-        "photo"
-        if all(upload_kind == "photo" for _, _, upload_kind, _ in classified_uploads)
-        else "video"
-    )
-    database = get_database()
-    owner_hash = anonymous_session_hash(anonymous_session_id)
-    run_id: uuid.UUID | None = None
-
-    with tempfile.TemporaryDirectory(prefix="swing-analysis-") as temp_directory:
-        temp_dir = Path(temp_directory)
-        prepared_media: list[PreparedMedia] = []
-        for index, (upload, content_type, upload_kind, suffix) in enumerate(
-            classified_uploads,
-            start=1,
-        ):
-            media_path = temp_dir / f"original_{index:02d}{suffix}"
-            _, sha256 = await _save_upload(
-                upload,
-                media_path,
-                settings.max_video_bytes if upload_kind == "video" else None,
-            )
-            prepared_media.append(
-                PreparedMedia(
-                    path=media_path,
-                    content_type=content_type,
-                    media_kind=upload_kind,
-                    sha256=sha256,
-                )
-            )
-
-        try:
-            with database.session() as session:
-                owner = repository.get_or_create_owner(session, owner_hash)
-                conversation = repository.get_or_create_conversation(
-                    session,
-                    owner=owner,
-                    conversation_id=conversation_id,
-                    context=context,
-                )
-                swing_session = repository.create_swing_session(
-                    session,
-                    owner_id=owner.id,
-                    conversation_id=conversation.id,
-                    context=context,
-                    question=question,
-                )
-                run = repository.create_analysis_run(
-                    session,
-                    swing_session_id=swing_session.id,
-                    conversation_id=conversation.id,
-                    media_kind=media_kind,
-                    model=settings.gemini_model,
-                )
-                repository.add_message(
-                    session,
-                    conversation_id=conversation.id,
-                    role="user",
-                    content=question.strip() or "전체 우선순위로 분석해줘",
-                    analysis_run_id=run.id,
-                )
-                history = repository.recent_messages(session, conversation.id)
-                conversation_id = conversation.id
-                swing_session_id = swing_session.id
-                run_id = run.id
-        except OwnerAccessError as error:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, str(error)) from error
-
-        uploaded_assets: list[tuple[uuid.UUID, str, PreparedMedia]] = []
-        try:
-            for media in prepared_media:
-                media_asset_id = uuid.uuid4()
-                storage_path = (
-                    f"original-{media.media_kind}/{swing_session_id}/"
-                    f"{media_asset_id}{media.path.suffix}"
-                )
-                await asyncio.to_thread(
-                    get_media_store().upload,
-                    storage_path,
-                    media.path,
-                    media.content_type,
-                )
-                uploaded_assets.append((media_asset_id, storage_path, media))
-
-            with database.session() as session:
-                for media_asset_id, storage_path, media in uploaded_assets:
-                    repository.create_uploaded_media(
-                        session,
-                        media_asset_id=media_asset_id,
-                        swing_session_id=swing_session_id,
-                        media_kind=media.media_kind,
-                        storage_path=storage_path,
-                        sha256=media.sha256,
-                    )
-
-            frame_paths: list[Path] = []
-            for index, media in enumerate(prepared_media, start=1):
-                if media.media_kind == "photo":
-                    frame_paths.append(media.path)
-                    continue
-                frame_dir = temp_dir / f"frames_{index:02d}"
-                frame_dir.mkdir()
-                frame_paths.extend(
-                    await asyncio.to_thread(
-                        extract_video_frames,
-                        media.path,
-                        frame_dir,
-                        settings.analysis_frame_count,
-                    )
-                )
-
-            graph = build_analysis_graph(model)
-            result = await graph.ainvoke(
-                {
-                    "frame_paths": frame_paths,
-                    "media_kind": media_kind,
-                    "context": context,
-                    "question": question.strip(),
-                    "history": history,
-                }
-            )
-            observation: VisionObservation = result["observation"]
-            reply: CoachReply | None = result.get("reply")
-            analysis_status: str = result["status"]
-        except StorageSigningError as error:
-            if uploaded_assets:
-                uploaded_paths = [storage_path for _, storage_path, _ in uploaded_assets]
-                try:
-                    await asyncio.to_thread(get_media_store().remove_many, uploaded_paths)
-                except StorageSigningError:
-                    logger.exception("Could not roll back partially uploaded media bundle")
-            if run_id is not None:
-                with database.session() as session:
-                    repository.fail_analysis(session, run_id, "STORAGE_UNAVAILABLE")
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "STORAGE_UNAVAILABLE") from error
-        except MediaProcessingError as error:
-            if run_id is not None:
-                with database.session() as session:
-                    repository.fail_analysis(session, run_id, "MEDIA_DECODE_FAILED")
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY, "MEDIA_DECODE_FAILED"
-            ) from error
-        except (GraphContractError, ModelCallError, ModelNotConfiguredError) as error:
-            error_code = getattr(error, "error_code", "MODEL_UNAVAILABLE")
-            logger.exception("Media model request failed with %s", error_code)
-            if run_id is not None:
-                with database.session() as session:
-                    repository.fail_analysis(session, run_id, error_code)
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, error_code) from error
-
-    with database.session() as session:
-        repository.finish_analysis(
-            session,
-            run_id=run_id,
-            status=analysis_status,
-            observation=observation,
-            reply=reply,
+    try:
+        result = await get_analysis_use_case().execute(
+            files=files,
+            anonymous_session_hash=anonymous_session_hash(anonymous_session_id),
+            context=context,
+            question=question,
+            conversation_id=conversation_id,
         )
-        if reply is not None:
-            repository.add_message(
-                session,
-                conversation_id=conversation_id,
-                role="assistant",
-                content=render_coach_reply(reply),
-                analysis_run_id=run_id,
-                interaction_meta=result.get("interaction_meta"),
-            )
-
+    except AnalysisUseCaseError as error:
+        raise _analysis_http_exception(error.error_code, error.kind) from error
     return AnalysisResponse(
-        conversation_id=conversation_id,
-        analysis_run_id=run_id,
-        status=analysis_status,
-        observation=observation,
-        reply=reply,
+        conversation_id=result.conversation_id,
+        analysis_run_id=result.analysis_run_id,
+        status=result.status,
+        observation=result.observation,
+        reply=result.reply,
     )
 
 
@@ -714,12 +533,10 @@ def history(
     database = get_database()
     owner_hash = anonymous_session_hash(anonymous_session_id)
     with database.session() as session:
-        owner = session.scalar(
-            select(OwnerContext).where(OwnerContext.anonymous_session_hash == owner_hash)
-        )
+        owner = owner_conversations.find_owner(session, owner_hash)
         if owner is None:
             return HistoryResponse(items=[])
-        rows = repository.history(session, owner_id=owner.id)
+        rows = analyses.history(session, owner_id=owner.id)
         items = [
             HistoryItem(
                 analysis_run_id=run.id,
@@ -743,12 +560,10 @@ async def delete_analysis(
     database = get_database()
     owner_hash = anonymous_session_hash(anonymous_session_id)
     with database.session() as session:
-        owner = session.scalar(
-            select(OwnerContext).where(OwnerContext.anonymous_session_hash == owner_hash)
-        )
+        owner = owner_conversations.find_owner(session, owner_hash)
         if owner is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "ANALYSIS_NOT_FOUND")
-        owned = repository.owned_run_with_assets(session, run_id=run_id, owner_id=owner.id)
+        owned = analyses.owned_run_with_assets(session, run_id=run_id, owner_id=owner.id)
         if owned is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "ANALYSIS_NOT_FOUND")
         _, assets = owned
@@ -761,7 +576,7 @@ async def delete_analysis(
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "STORAGE_UNAVAILABLE") from error
 
     with database.session() as session:
-        repository.mark_deleted(
+        analyses.mark_deleted(
             session,
             run_id=run_id,
             media_asset_ids=media_asset_ids,

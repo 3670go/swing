@@ -9,7 +9,7 @@ from google.genai import errors, types
 from pydantic import BaseModel, ValidationError
 
 from app.config import Settings
-from app.schemas import (
+from app.domain.models import (
     BaseAssessment,
     CoachContent,
     ConversationReply,
