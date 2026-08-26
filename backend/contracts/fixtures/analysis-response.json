@@ -1,0 +1,49 @@
+{
+  "request_id": "11111111-1111-4111-8111-111111111111",
+  "analysis_run_id": "22222222-2222-4222-8222-222222222222",
+  "status": "succeeded",
+  "observation": {
+    "is_golf_media": true,
+    "golf_media_reason": "골프 스윙의 어드레스부터 임팩트 이후까지 확인된다.",
+    "observations": [
+      {
+        "timestamp": "00:01.20",
+        "subject": "손",
+        "reference": "오른쪽 허벅지",
+        "phase": "다운스윙 중간",
+        "state": "손이 오른쪽 허벅지 뒤쪽에 남아 있다.",
+        "assessment_category": "arm_body_space",
+        "confidence": 0.86
+      }
+    ],
+    "cannot_determine": ["실제 클럽 패스 수치"]
+  },
+  "base_assessment": {
+    "primary_category": "arm_body_space",
+    "importance": "high",
+    "findings": [
+      {
+        "category": "arm_body_space",
+        "observation_indexes": [0],
+        "summary": "다운스윙에서 손이 몸 앞 공간으로 충분히 이동하지 못한다.",
+        "confidence": 0.86
+      }
+    ],
+    "cannot_determine": ["실제 클럽 패스 수치"],
+    "assessment_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "coach_content": {
+    "evidence_mode": "video_ready",
+    "direct_answer": "다운스윙 중간에 손이 몸 뒤쪽에 남는 성분이 보입니다.",
+    "causal_chain": ["몸통 회전이 먼저 증가함", "손이 몸 앞 공간으로 내려올 시간이 줄어듦"],
+    "evidence_boundary": "후방 영상에서 확인되는 손과 허벅지의 상대 위치만 근거로 판단했습니다.",
+    "cannot_determine": ["실제 클럽 패스 수치"],
+    "observation_indexes": [0],
+    "base_assessment_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "single_change": "전환에서 손이 오른쪽 허벅지 앞 공간으로 내려올 시간을 먼저 확보하세요.",
+    "verification": "같은 후방 각도에서 손이 오른쪽 허벅지 앞쪽에 도달하는지 비교하세요.",
+    "preserve_candidate": null,
+    "preserve_topic": null,
+    "follow_up_information_needed": null
+  }
+}

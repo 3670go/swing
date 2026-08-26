@@ -296,3 +296,33 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - 실제 Supabase DB·Storage와 Gemini를 사용하는 유료 `/v1/analyze` 성공 경로는 실행하지 않았다.
 - 실제 미디어 Provider E2E는 별도 비용 테스트 단계로 남아 있다.
 
+## backend → java-python-split → contract-freeze
+
+### 확정 내용 — 2026-08-26
+
+- Client-facing API와 제품 DB는 Java/Spring Boot가 소유한다.
+- Python/FastAPI는 내부 미디어 분석과 텍스트 코칭만 제공한다.
+- 공개 API별 Java 소유권과 Python 내부 호출 경로를 확정했다.
+- 내부 API는 동기 HTTP, 서버 전용 Bearer token, signed read URL 전달 방식으로 확정했다.
+- 모델 비용 중복을 막기 위해 timeout·429·5xx 자동 재시도를 하지 않는다.
+- 제품 데이터는 단계별 single-writer 원칙으로 Java에 이전한다.
+- Java 기준은 Java 21, Spring Boot 4.1.1, Gradle Kotlin DSL로 확정했다.
+- Spring Boot 4.1.1은 2026-08-26 확인 당시 공식 최신 stable이며 Java 17~26을 지원한다. 출처: `https://docs.spring.io/spring-boot/system-requirements.html`
+
+### 계약 파일
+
+- `backend/contracts/java-package-structure.md`
+- `backend/contracts/python-package-structure.md`
+- `backend/contracts/java-python-boundary.md`
+- `backend/contracts/internal-api.openapi.yaml`
+- `backend/contracts/fixtures/`
+
+### 다음 분리 순서
+
+1. 계약문서 기준 커밋
+2. 기존 Python 코드를 `backend/ai-processing`으로 이동
+3. Java/Spring Boot 프로젝트 생성
+4. Java/Python 내부 API 구현
+5. 제품 DB 소유권 이전
+6. Client-facing API Java 전환
+

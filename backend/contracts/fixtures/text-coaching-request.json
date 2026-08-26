@@ -1,0 +1,15 @@
+{
+  "request_id": "44444444-4444-4444-8444-444444444444",
+  "message": "요즘 자꾸 당겨 치는 느낌이야",
+  "shot_context": {
+    "shot_profile": "full_swing",
+    "club": "driver",
+    "camera_view": "down_the_line",
+    "handedness": "right",
+    "analysis_goal": "shot_result",
+    "short_game_type": null,
+    "video_type": null,
+    "shot_result": "pull"
+  },
+  "history": []
+}

@@ -1,0 +1,17 @@
+{
+  "request_id": "44444444-4444-4444-8444-444444444444",
+  "coach_content": {
+    "evidence_mode": "text_only",
+    "direct_answer": "당겨 치는 느낌은 몸통 회전 선행이나 실제 아웃-인 경로 등 여러 원인에서 생길 수 있습니다.",
+    "causal_chain": [],
+    "evidence_boundary": "영상이 없어 실제 동작과 클럽 패스는 확인하지 못했습니다.",
+    "cannot_determine": ["다운스윙 순서", "실제 클럽 패스"],
+    "observation_indexes": [],
+    "base_assessment_hash": null,
+    "single_change": null,
+    "verification": "후방 영상을 추가하면 몸통과 팔의 순서를 먼저 비교합니다.",
+    "preserve_candidate": null,
+    "preserve_topic": null,
+    "follow_up_information_needed": "당겨 맞은 공이 왼쪽으로 곧게 가는지 휘는지 알려주세요."
+  }
+}

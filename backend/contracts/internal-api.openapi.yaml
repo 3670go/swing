@@ -1,0 +1,445 @@
+openapi: 3.1.0
+info:
+  title: Swing Analyzer Internal AI API
+  version: 1.0.0
+  description: Contract between the Java Domain Application and Python AI Processing Unit.
+paths:
+  /internal/health:
+    get:
+      operationId: getInternalHealth
+      security: []
+      responses:
+        "200":
+          description: AI Processing Unit health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /internal/v1/analyses:
+    post:
+      operationId: analyzeSwingMediaInternal
+      security:
+        - InternalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalAnalysisRequest"
+      responses:
+        "200":
+          description: Completed, limited, or rejected analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalAnalysisResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "415":
+          $ref: "#/components/responses/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+        "502":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+  /internal/v1/coaching/text:
+    post:
+      operationId: coachTextInternal
+      security:
+        - InternalBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalTextCoachingRequest"
+      responses:
+        "200":
+          description: Evidence-bounded text coaching content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalTextCoachingResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+        "502":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+components:
+  securitySchemes:
+    InternalBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-server-token
+  responses:
+    ErrorResponse:
+      description: Internal API error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [service, status, model_configured]
+      properties:
+        service:
+          type: string
+          const: ai-processing
+        status:
+          type: string
+          enum: [ready, degraded]
+        model_configured:
+          type: boolean
+    ShotContext:
+      type: object
+      additionalProperties: false
+      required: [shot_profile, club, camera_view, handedness, analysis_goal]
+      properties:
+        shot_profile:
+          type: string
+          enum: [full_swing, short_game]
+        club:
+          type: string
+          minLength: 1
+          maxLength: 64
+        camera_view:
+          type: string
+          enum: [face_on, down_the_line]
+        handedness:
+          type: string
+          enum: [right, left]
+        analysis_goal:
+          type: string
+          enum: [posture_correction, shot_result, comparison]
+        short_game_type:
+          type: [string, "null"]
+          maxLength: 64
+        video_type:
+          type: [string, "null"]
+          maxLength: 64
+        shot_result:
+          type: [string, "null"]
+          maxLength: 128
+    HistoryMessage:
+      type: object
+      additionalProperties: false
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    MediaReference:
+      type: object
+      additionalProperties: false
+      required: [media_id, kind, content_type, size_bytes, sha256, read_url]
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [photo, video]
+        content_type:
+          type: string
+          minLength: 1
+          maxLength: 128
+        size_bytes:
+          type: integer
+          minimum: 1
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        read_url:
+          type: string
+          format: uri
+    InternalAnalysisRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, analysis_run_id, media, shot_context, user_question, history]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        analysis_run_id:
+          type: string
+          format: uuid
+        media:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/MediaReference"
+        shot_context:
+          $ref: "#/components/schemas/ShotContext"
+        user_question:
+          type: string
+          maxLength: 4000
+        user_feel:
+          type: [string, "null"]
+          maxLength: 1000
+        history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/HistoryMessage"
+    ObservationItem:
+      type: object
+      additionalProperties: false
+      required: [subject, reference, phase, state, assessment_category, confidence]
+      properties:
+        timestamp:
+          type: [string, "null"]
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 80
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 120
+        phase:
+          type: string
+          minLength: 1
+          maxLength: 80
+        state:
+          type: string
+          minLength: 1
+          maxLength: 300
+        assessment_category:
+          $ref: "#/components/schemas/AssessmentCategory"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    VisionObservation:
+      type: object
+      additionalProperties: false
+      required: [is_golf_media, golf_media_reason, observations, cannot_determine]
+      properties:
+        is_golf_media:
+          type: boolean
+        golf_media_reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+        observations:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/ObservationItem"
+        cannot_determine:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+    AssessmentFinding:
+      type: object
+      additionalProperties: false
+      required: [category, observation_indexes, summary, confidence]
+      properties:
+        category:
+          $ref: "#/components/schemas/AssessmentCategory"
+        observation_indexes:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            type: integer
+            minimum: 0
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 500
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    BaseAssessment:
+      type: object
+      additionalProperties: false
+      required: [primary_category, importance, findings, cannot_determine, assessment_hash]
+      properties:
+        primary_category:
+          $ref: "#/components/schemas/AssessmentCategory"
+        importance:
+          type: string
+          enum: [high, medium, low]
+        findings:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/AssessmentFinding"
+        cannot_determine:
+          type: array
+          maxItems: 12
+          items:
+            type: string
+        assessment_hash:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+    CoachContent:
+      type: object
+      additionalProperties: false
+      required:
+        - evidence_mode
+        - direct_answer
+        - causal_chain
+        - evidence_boundary
+        - cannot_determine
+        - observation_indexes
+      properties:
+        evidence_mode:
+          type: string
+          enum: [text_only, photo_limited, video_ready]
+        direct_answer:
+          type: string
+          minLength: 1
+          maxLength: 700
+        causal_chain:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+        evidence_boundary:
+          type: string
+          minLength: 1
+          maxLength: 300
+        cannot_determine:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+        observation_indexes:
+          type: array
+          maxItems: 12
+          items:
+            type: integer
+            minimum: 0
+        base_assessment_hash:
+          type: [string, "null"]
+          pattern: "^[0-9a-f]{64}$"
+        single_change:
+          type: [string, "null"]
+          maxLength: 500
+        verification:
+          type: [string, "null"]
+          maxLength: 500
+        preserve_candidate:
+          type: [string, "null"]
+          maxLength: 220
+        preserve_topic:
+          type: [string, "null"]
+          maxLength: 80
+        follow_up_information_needed:
+          type: [string, "null"]
+          maxLength: 180
+    InternalAnalysisResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, analysis_run_id, status, observation, base_assessment, coach_content]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        analysis_run_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [succeeded, limited, rejected]
+        observation:
+          $ref: "#/components/schemas/VisionObservation"
+        base_assessment:
+          anyOf:
+            - $ref: "#/components/schemas/BaseAssessment"
+            - type: "null"
+        coach_content:
+          anyOf:
+            - $ref: "#/components/schemas/CoachContent"
+            - type: "null"
+    InternalTextCoachingRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, message, shot_context, history]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        shot_context:
+          $ref: "#/components/schemas/ShotContext"
+        history:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/HistoryMessage"
+    InternalTextCoachingResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, coach_content]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        coach_content:
+          $ref: "#/components/schemas/CoachContent"
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, retryable, request_id]
+      properties:
+        code:
+          type: string
+          enum:
+            - INTERNAL_AUTH_FAILED
+            - MEDIA_TYPE_UNSUPPORTED
+            - MEDIA_UNAVAILABLE
+            - MEDIA_DECODE_FAILED
+            - ANALYSIS_CONTRACT_FAILED
+            - MODEL_RATE_LIMITED
+            - MODEL_UNAVAILABLE
+            - MODEL_TIMEOUT
+            - INTERNAL_ERROR
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+        retryable:
+          type: boolean
+        request_id:
+          type: string
+          format: uuid
+        analysis_run_id:
+          type: [string, "null"]
+          format: uuid
+    AssessmentCategory:
+      type: string
+      enum:
+        - impact_structure
+        - transition_sequence
+        - arm_body_space
+        - center_posture
+        - backswing
+        - tempo_shape
