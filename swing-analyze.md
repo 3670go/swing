@@ -351,3 +351,18 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - `curl GET /health`: HTTP 200
 - `curl POST /v1/analyze` 미지원 미디어: HTTP 415
 
+### Python 내부 API 구현 — 2026-08-26
+
+- `GET /internal/health`를 추가했다.
+- `POST /internal/v1/analyses`에 Bearer 인증, signed URL host 제한, 크기·SHA-256 검증, 임시 프레임 처리를 추가했다.
+- `POST /internal/v1/coaching/text`는 텍스트 `CoachContent`까지만 반환한다.
+- 내부 분석·코칭은 Gemini 자동 재시도 없이 한 번만 호출한다.
+- 기존 공개 `/v1/*` API와 제품 DB 코드는 전환 완료 전까지 유지한다.
+- `ruff check --fix`, `ruff format`, `ruff check`: 통과
+- `unittest`: 58개 통과
+- `curl GET /internal/health`: HTTP 200
+- `curl` 인증 없음: HTTP 401, `INTERNAL_AUTH_FAILED`
+- `curl` 잘못된 내부 요청: HTTP 422, `ANALYSIS_CONTRACT_FAILED`
+- `curl` 허용되지 않은 미디어 host: HTTP 422, `MEDIA_UNAVAILABLE`
+- 실제 Gemini/Supabase Provider E2E는 실행하지 않았다.
+

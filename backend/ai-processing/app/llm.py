@@ -118,9 +118,18 @@ def _provider_error_code(error: errors.APIError) -> str:
 class GeminiModelAdapter:
     """Bounded Gemini adapter for text and extracted-frame observation calls."""
 
-    def __init__(self, settings: Settings, client: genai.Client | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        client: genai.Client | None = None,
+        *,
+        max_attempts: int = MODEL_MAX_ATTEMPTS,
+    ) -> None:
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be at least one")
         self.model = settings.gemini_model
         self._retry_delay_seconds = settings.model_retry_delay_seconds
+        self._max_attempts = max_attempts
         api_key = settings.model_api_key
         self._client = client or (genai.Client(api_key=api_key) if api_key else None)
 
@@ -139,7 +148,7 @@ class GeminiModelAdapter:
         contents: str | list[str | types.Part],
         schema: type[ResponseModel],
     ) -> ResponseModel:
-        for attempt in range(1, MODEL_MAX_ATTEMPTS + 1):
+        for attempt in range(1, self._max_attempts + 1):
             try:
                 response = await self._require_client().aio.models.generate_content(
                     model=self.model,
@@ -151,7 +160,7 @@ class GeminiModelAdapter:
                 )
                 return _parse_response(response, schema)
             except errors.APIError as error:
-                if attempt < MODEL_MAX_ATTEMPTS and error.code in RETRYABLE_MODEL_STATUS_CODES:
+                if attempt < self._max_attempts and error.code in RETRYABLE_MODEL_STATUS_CODES:
                     logger.warning(
                         "Retrying Gemini structured response after HTTP %s",
                         error.code,

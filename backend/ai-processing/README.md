@@ -87,6 +87,16 @@ python -m uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
 
 UI prototype의 기본 API 주소는 `http://127.0.0.1:8000`입니다.
 
+## Java 전용 내부 API
+
+- `GET /internal/health`
+- `POST /internal/v1/analyses`
+- `POST /internal/v1/coaching/text`
+
+분석·코칭 요청에는 `INTERNAL_API_TOKEN` Bearer 인증이 필요합니다. 분석 미디어는 Supabase private Storage의 signed read URL로만 읽으며 Python은 제품 DB에 저장하지 않습니다. 내부 호출은 Gemini 자동 재시도 없이 한 번만 실행합니다.
+
+요청·응답 기준은 `..\contracts\internal-api.openapi.yaml`과 `..\contracts\fixtures\`입니다.
+
 ## 검증
 
 기본 테스트는 현재 저장소의 `unittest` 테스트를 기준으로 실행합니다.

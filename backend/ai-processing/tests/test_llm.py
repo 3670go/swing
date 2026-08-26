@@ -211,6 +211,29 @@ class GeminiModelAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(raised.exception.error_code, "MODEL_RATE_LIMITED")
         self.assertEqual(len(client.models.calls), 2)
 
+    async def test_single_attempt_mode_does_not_retry_paid_internal_call(self) -> None:
+        rate_limited = errors.APIError(
+            429,
+            {"error": {"code": 429, "message": "quota", "status": "RESOURCE_EXHAUSTED"}},
+        )
+        client = FakeGeminiClient([rate_limited])
+        adapter = GeminiModelAdapter(  # type: ignore[arg-type]
+            make_settings(),
+            client=client,
+            max_attempts=1,
+        )
+
+        with self.assertRaises(ModelCallError):
+            await adapter.compose_text_content(
+                message="테스트",
+                context=make_context(),
+                history=[],
+                latest_analysis=None,
+                policy=make_policy(),
+            )
+
+        self.assertEqual(len(client.models.calls), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

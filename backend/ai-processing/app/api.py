@@ -31,6 +31,7 @@ from app.conversation_rendering import render_conversation_reply
 from app.database import Database
 from app.domain.models import ShotContext
 from app.graphs.runtime import GraphContractError, build_text_graph
+from app.internal_api import internal_app
 from app.llm import GeminiModelAdapter, ModelCallError, ModelNotConfiguredError
 from app.repositories.chat_messages import ChatMessageRepository
 from app.repositories.owner_conversations import OwnerAccessError, OwnerConversationRepository
@@ -196,6 +197,7 @@ messages = ChatMessageRepository()
 analyses = SwingAnalysisRepository()
 settings: Settings = get_settings()
 app = FastAPI(title="Swing Analyzer API", version="0.1.0")
+app.mount("/internal", internal_app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),

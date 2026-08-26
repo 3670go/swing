@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.6-flash"
     gpt_action_api_key: SecretStr | None = None
+    internal_api_token: SecretStr | None = None
     gpt_action_file_hosts: tuple[str, ...] = ("files.oaiusercontent.com",)
     model_retry_delay_seconds: float = Field(default=1.5, ge=0, le=10)
     cors_origins: tuple[str, ...] = ("http://localhost:4173", "http://127.0.0.1:4173")
@@ -90,6 +91,13 @@ class Settings(BaseSettings):
         if self.gpt_action_api_key is None:
             return None
         return self.gpt_action_api_key.get_secret_value()
+
+    @property
+    def internal_api_token_value(self) -> str | None:
+        """Return the Java-to-Python bearer token without exposing it in repr output."""
+        if self.internal_api_token is None:
+            return None
+        return self.internal_api_token.get_secret_value()
 
 
 @lru_cache(maxsize=1)
