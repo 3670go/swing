@@ -34,4 +34,14 @@ PowerShell 기준이다.
 
 현재 단계에서는 공개 제품 API를 만들지 않았다. 골격 기동 확인에는 Spring Boot Actuator의 `GET /actuator/health`를 사용한다.
 
+## Python 내부 Client 설정
+
+다음 값이 모두 준비됐을 때만 `AI_PROCESSING_ENABLED=true`로 활성화한다.
+
+- `AI_PROCESSING_BASE_URL`
+- `INTERNAL_API_TOKEN`
+- `AI_PROCESSING_TIMEOUT_SECONDS`
+
+Client는 `POST /internal/v1/analyses`, `POST /internal/v1/coaching/text`, `GET /internal/health`만 호출한다. 자동 재시도는 하지 않으며 Python의 구조화된 오류를 Java 예외로 변환한다.
+
 공통 계약은 `..\contracts\`를 따른다.

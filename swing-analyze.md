@@ -366,3 +366,15 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - `curl` 허용되지 않은 미디어 host: HTTP 422, `MEDIA_UNAVAILABLE`
 - 실제 Gemini/Supabase Provider E2E는 실행하지 않았다.
 
+### Java AI Processing Client 구현 — 2026-08-26
+
+- Java application Port `AiProcessingClient`와 HTTP Adapter `RestAiProcessingClient`를 추가했다.
+- 분석·텍스트 코칭·health 요청과 응답을 공통 fixture 기준의 Java record로 정의했다.
+- 내부 Bearer token, base URL, timeout은 환경 설정으로만 주입한다.
+- Python 오류 본문의 code, retryable, request ID를 `AiProcessingClientException`으로 변환한다.
+- 자동 재시도는 추가하지 않았다.
+- 공통 분석·텍스트·오류 fixture contract test: 통과
+- `gradlew.bat test --no-daemon`: 통과
+- Java 기동 후 `curl GET /actuator/health`: HTTP 200, `UP`
+- 아직 Java → 실제 Python 프로세스 호출은 실행하지 않았다.
+
