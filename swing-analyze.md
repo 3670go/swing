@@ -321,8 +321,16 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 
 1. 계약문서 기준 커밋 — 완료 (`d728dc4`)
 2. 기존 Python 코드를 `backend/ai-processing`으로 이동 — 완료 (`80d2de1`)
-3. Java/Spring Boot 프로젝트 생성
+3. Java/Spring Boot 프로젝트 생성 — 완료
 4. Java/Python 내부 API 구현
 5. 제품 DB 소유권 이전
 6. Client-facing API Java 전환
+
+### Java 골격 검증 — 2026-08-26
+
+- Java 21 toolchain 자동 다운로드 및 사용 확인
+- `gradlew.bat test --no-daemon`: 통과
+- `gradlew.bat bootRun --no-daemon --args="--server.port=18080"`: 기동 확인
+- `curl GET /actuator/health`: HTTP 200, `UP`
+- 공개 `/v1/*` API와 DB 기능은 아직 추가하지 않았다.
 
