@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -19,7 +18,6 @@ import jakarta.persistence.UniqueConstraint;
 public class OwnerContextEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "anonymous_session_hash", unique = true, columnDefinition = "text")
@@ -48,6 +46,7 @@ public class OwnerContextEntity {
 	}
 
 	public OwnerContextEntity(String anonymousSessionHash) {
+		this.id = UUID.randomUUID();
 		this.anonymousSessionHash = anonymousSessionHash;
 	}
 

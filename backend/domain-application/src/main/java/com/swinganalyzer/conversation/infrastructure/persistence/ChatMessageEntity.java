@@ -10,7 +10,6 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -23,7 +22,6 @@ import jakarta.persistence.Table;
 public class ChatMessageEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "conversation_id", nullable = false)
@@ -46,11 +44,15 @@ public class ChatMessageEntity {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
+	@Column(name = "sequence_number", insertable = false, updatable = false)
+	private Long sequenceNumber;
+
 	protected ChatMessageEntity() {
 	}
 
 	public ChatMessageEntity(UUID conversationId, UUID analysisRunId, String role, String content,
 			Map<String, Object> interactionMeta) {
+		this.id = UUID.randomUUID();
 		this.conversationId = conversationId;
 		this.analysisRunId = analysisRunId;
 		this.role = role;
@@ -72,5 +74,9 @@ public class ChatMessageEntity {
 
 	public Map<String, Object> interactionMeta() {
 		return interactionMeta;
+	}
+
+	public Long sequenceNumber() {
+		return sequenceNumber;
 	}
 }

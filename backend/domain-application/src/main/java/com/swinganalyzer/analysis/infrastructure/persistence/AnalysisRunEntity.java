@@ -10,7 +10,6 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -23,7 +22,6 @@ import jakarta.persistence.Table;
 public class AnalysisRunEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "swing_session_id", nullable = false, unique = true)
@@ -63,6 +61,7 @@ public class AnalysisRunEntity {
 	}
 
 	public AnalysisRunEntity(UUID swingSessionId, UUID conversationId, String mediaKind, String model) {
+		this.id = UUID.randomUUID();
 		this.swingSessionId = swingSessionId;
 		this.conversationId = conversationId;
 		this.status = "running";
@@ -95,6 +94,18 @@ public class AnalysisRunEntity {
 
 	public String status() {
 		return status;
+	}
+
+	public UUID swingSessionId() {
+		return swingSessionId;
+	}
+
+	public UUID conversationId() {
+		return conversationId;
+	}
+
+	public String mediaKind() {
+		return mediaKind;
 	}
 
 	public Map<String, Object> reply() {

@@ -6,15 +6,13 @@ from typing import Any
 from google.genai import errors
 
 from app.config import Settings
-from app.domain.models import CoachContent, ConversationReply, ShotContext, VisionObservation
+from app.domain.models import CoachContent, ShotContext, VisionObservation
 from app.llm import GeminiModelAdapter, ModelCallError, ModelNotConfiguredError
 
 
 def make_settings(*, api_key: str | None = "gemini-test-key") -> Settings:
     return Settings(
-        database_url="postgresql://user:secret@host:6543/postgres",
         supabase_url="https://project.supabase.co",
-        supabase_secret_key="server-secret-key",
         gemini_api_key=api_key,
         model_retry_delay_seconds=0,
     )
@@ -109,27 +107,6 @@ class GeminiModelAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("7번 아이언", call["contents"])
         self.assertIn("현재 turn에는 영상이", call["contents"])
         self.assertIn("최대 두 개", call["contents"])
-
-    async def test_conversation_writer_receives_content_not_analysis_contract(self) -> None:
-        expected = ConversationReply(message="좋아. 반복되는 미스 하나부터 줄여보자.")
-        client = FakeGeminiClient([expected])
-        adapter = GeminiModelAdapter(make_settings(), client=client)  # type: ignore[arg-type]
-
-        result = await adapter.write_conversation(
-            user_message="골프 잘 치고 싶엉",
-            history=[],
-            content=make_text_content(),
-            policy=make_policy(),
-        )
-
-        self.assertEqual(result, expected)
-        call = client.models.calls[0]
-        self.assertIs(call["config"].response_schema, ConversationReply)
-        self.assertNotIn("frozen_base_assessment", call["contents"])
-        self.assertNotIn("7번 아이언", call["contents"])
-        self.assertIn("보고서 형식", call["contents"])
-        self.assertIn("영상을 먼저 요구하지 않는다", call["contents"])
-        self.assertIn("짧은 반말의 해체", call["contents"])
 
     async def test_observation_sends_image_bytes_and_blind_context_only(self) -> None:
         expected = VisionObservation(

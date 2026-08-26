@@ -1,20 +1,6 @@
 import unittest
 
-from app.conversation_policy import build_conversation_policy, enforce_conversation_policy
-from app.domain.models import CoachContent, ConversationReply
-
-
-def make_content(*, preserve: bool = False) -> CoachContent:
-    return CoachContent(
-        evidence_mode="text_only",
-        direct_answer="핵심 답변입니다.",
-        causal_chain=[],
-        evidence_boundary="현재 대화 근거",
-        cannot_determine=[],
-        observation_indexes=[],
-        preserve_candidate="헤드 릴리스는 유지해야 합니다." if preserve else None,
-        preserve_topic="head_release" if preserve else None,
-    )
+from app.conversation_policy import build_conversation_policy
 
 
 def assistant_meta(
@@ -61,23 +47,14 @@ class ConversationPolicyTests(unittest.TestCase):
         self.assertFalse(without_analysis.positive_allowed)
         self.assertFalse(during_cooldown.positive_allowed)
 
-    def test_explicit_strength_request_overrides_cooldown_but_blocks_repeated_topic(self) -> None:
+    def test_explicit_strength_request_overrides_positive_cooldown(self) -> None:
         policy = build_conversation_policy(
             message="내 스윙 장점도 말해줘",
             history=[assistant_meta(positive_topic="head_release")],
             latest_analysis={"conclusion": "검증된 분석"},
         )
-        reply = ConversationReply(
-            message="핵심 판정입니다.",
-            positive_feedback="헤드 릴리스는 유지해야 합니다.",
-            positive_topic="head_release",
-        )
-
-        enforced, metadata = enforce_conversation_policy(reply, policy, make_content(preserve=True))
-
         self.assertTrue(policy.positive_allowed)
-        self.assertIsNone(enforced.positive_feedback)
-        self.assertIsNone(metadata["positive_topic"])
+        self.assertIn("head_release", policy.blocked_positive_topics)
 
     def test_response_length_mode_adapts_to_user_request(self) -> None:
         short = build_conversation_policy(
@@ -94,23 +71,14 @@ class ConversationPolicyTests(unittest.TestCase):
         self.assertEqual(short.response_mode, "short")
         self.assertEqual(deep.response_mode, "deep")
 
-    def test_good_bad_contrast_prefers_a_question_and_has_a_fallback(self) -> None:
+    def test_good_bad_contrast_prefers_compare_invite_mode(self) -> None:
         policy = build_conversation_policy(
             message="잘 맞는 날에는 땡겨치는 느낌이 덜 그래",
             history=[],
             latest_analysis=None,
         )
-        reply = ConversationReply(message="먼저 잘된 샷과 안 된 샷의 차이를 구분해야 해.")
-
-        enforced, metadata = enforce_conversation_policy(reply, policy, make_content())
-
         self.assertTrue(policy.question_preferred)
         self.assertEqual(policy.preferred_invite_mode, "compare_good_bad")
-        self.assertEqual(
-            enforced.follow_up_question,
-            "잘 맞은 샷과 안 맞은 샷에서는 어떤 느낌이 가장 달랐어?",
-        )
-        self.assertEqual(metadata["invite_mode"], "compare_good_bad")
 
     def test_default_context_is_irrelevant_to_general_goal_or_pro_reference(self) -> None:
         general_goal = build_conversation_policy(

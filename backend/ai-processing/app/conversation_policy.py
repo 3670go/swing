@@ -1,8 +1,6 @@
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
-from app.domain.models import CoachContent, ConversationReply
-
 InviteMode = Literal[
     "compare_good_bad",
     "locate_timing",
@@ -65,26 +63,6 @@ CONTEXT_RELEVANCE_TERMS = (
     "샷 결과",
     "스윙 영상",
 )
-INTERNAL_SURFACE_TERMS = (
-    "observation",
-    "measurement",
-    "feel 대조",
-    "evidence_boundary",
-    "baseassessment",
-    "coachcontent",
-    "conversationreply",
-    "response_policy",
-    "판정 불가 목록",
-    "내부 제어",
-    "백엔드",
-)
-FALLBACK_QUESTIONS: dict[InviteMode, str] = {
-    "compare_good_bad": "잘 맞은 샷과 안 맞은 샷에서는 어떤 느낌이 가장 달랐어?",
-    "locate_timing": "그 느낌이 가장 강한 순간은 전환할 때야, 공 맞을 때야?",
-    "recall_specific_shot": "최근 가장 심했던 샷은 공이 어디로 출발했어?",
-    "connect_body_feel": "영상에서 보인 순간이 네 몸에서도 같은 순간으로 느껴졌어?",
-    "follow_up_experiment": "그 실험에서는 몸 느낌과 샷 결과 중 무엇부터 달라졌어?",
-}
 
 
 @dataclass(frozen=True)
@@ -171,61 +149,3 @@ def build_conversation_policy(
         context_relevant=any(term in message.strip().lower() for term in CONTEXT_RELEVANCE_TERMS),
         tone="polite" if any(term in message.strip() for term in POLITE_TERMS) else "casual",
     )
-
-
-def enforce_conversation_policy(
-    reply: ConversationReply,
-    policy: ConversationPolicy,
-    content: CoachContent,
-) -> tuple[ConversationReply, dict[str, Any]]:
-    """Drop optional model output that violates deterministic conversation policy."""
-    updates: dict[str, Any] = {}
-
-    normalized_message = reply.message.lower()
-    surface_valid = not any(term in normalized_message for term in INTERNAL_SURFACE_TERMS)
-    surface_valid = surface_valid and "?" not in reply.message
-    if not surface_valid:
-        updates["message"] = content.direct_answer
-
-    positive_valid = (
-        policy.positive_allowed
-        and reply.positive_feedback is not None
-        and reply.positive_topic is not None
-        and content.preserve_candidate is not None
-        and content.preserve_topic is not None
-        and reply.positive_topic == content.preserve_topic
-        and reply.positive_topic not in policy.blocked_positive_topics
-    )
-    if not positive_valid:
-        updates.update(positive_feedback=None, positive_topic=None)
-
-    question_valid = (
-        policy.question_allowed
-        and reply.follow_up_question is not None
-        and reply.question_topic is not None
-        and reply.invite_mode in policy.allowed_invite_modes
-        and reply.follow_up_question.count("?") <= 1
-    )
-    if not question_valid:
-        if policy.question_preferred and policy.preferred_invite_mode is not None:
-            preferred_mode = policy.preferred_invite_mode
-            updates.update(
-                follow_up_question=FALLBACK_QUESTIONS[preferred_mode],
-                question_topic=f"policy_{preferred_mode}",
-                invite_mode=preferred_mode,
-            )
-        else:
-            updates.update(
-                follow_up_question=None,
-                question_topic=None,
-                invite_mode="none",
-            )
-
-    enforced = reply.model_copy(update=updates)
-    interaction_meta = {
-        "response_mode": policy.response_mode,
-        "positive_topic": enforced.positive_topic,
-        "question_topic": enforced.question_topic,
-        "invite_mode": enforced.invite_mode,
-    }
-    return enforced, interaction_meta

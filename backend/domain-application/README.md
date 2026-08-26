@@ -32,7 +32,17 @@ PowerShell 기준이다.
 .\gradlew.bat bootRun --no-daemon
 ```
 
-현재 단계에서는 공개 제품 API를 만들지 않았다. 골격 기동 확인에는 Spring Boot Actuator의 `GET /actuator/health`를 사용한다.
+공개 API는 다음과 같다.
+
+- `GET /health`: 제품 서버 구성 상태
+- `POST /v1/chat`: 텍스트 코칭 대화
+- `POST /v1/analyze`: 사진·영상 분석
+- `GET /v1/history`: 익명 세션 분석 이력
+- `DELETE /v1/analysis/{runId}`: 분석 결과와 미디어 삭제 표시
+- `POST /v1/actions/analyze`: Custom GPT Action 미디어 분석
+- `GET /v1/actions/openapi.json`: Custom GPT Action 계약
+
+UI는 이 Java 서버만 호출한다. 기본 주소는 `http://127.0.0.1:8080`이다.
 
 ## Python 내부 Client 설정
 
@@ -58,3 +68,6 @@ Flyway는 기본적으로 꺼져 있다. 새 DB에서는 `DB_MIGRATION_ENABLED=t
 확인된 경우에만 최초 한 번 `DB_MIGRATION_ENABLED=true`, `DB_BASELINE_ON_MIGRATE=true`,
 `DB_BASELINE_VERSION=3`으로 기준선을 기록하고, 다음 실행부터 baseline 설정을 다시 끈다.
 revision 확인 없이 baseline을 만들거나 기존 DB에 V1을 실행하지 않는다.
+
+기존 제품 DB의 기준선은 version 3으로 기록됐고, V4가 메시지 순서 키를 추가한다. Supabase
+transaction pooler를 사용할 때는 `application.properties`의 `prepareThreshold=0` 설정을 유지한다.

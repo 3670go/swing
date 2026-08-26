@@ -7,7 +7,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -20,7 +19,6 @@ import jakarta.persistence.Table;
 public class MediaAssetEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "session_id", nullable = false)
@@ -80,5 +78,9 @@ public class MediaAssetEntity {
 
 	public String status() {
 		return status;
+	}
+
+	public String kind() {
+		return kind;
 	}
 }

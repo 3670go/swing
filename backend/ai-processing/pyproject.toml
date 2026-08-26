@@ -3,21 +3,16 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "swing-analyzer-backend"
+name = "swing-analyzer-ai-processing"
 version = "0.1.0"
-description = "Python backend for private golf swing media storage and analysis."
+description = "Internal Python AI processing unit for golf swing analysis."
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "alembic>=1.15,<2",
     "fastapi>=0.133,<1",
     "langgraph>=1.1.5,<2",
     "google-genai>=1,<2",
-    "orjson>=3.11.7,<3.12",
-    "psycopg[binary]>=3.2,<4",
+    "orjson==3.11.7",
     "pydantic-settings>=2.13,<3",
-    "python-multipart>=0.0.22,<1",
-    "sqlalchemy>=2.0,<3",
-    "supabase>=2.30,<3",
     "uvicorn[standard]>=0.41,<1",
 ]
 

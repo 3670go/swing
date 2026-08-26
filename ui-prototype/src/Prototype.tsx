@@ -178,7 +178,7 @@ const fullSwingClubs = [
 ];
 const shortGameClubs = ["9번 아이언", "PW", "GW", "SW", "LW"];
 const pendingStatuses: AnalysisStatus[] = ["uploading", "checking", "queued", "running"];
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
 
 const statusCopy: Record<AnalysisStatus, { label: string; detail: string }> = {
   uploading: { label: "업로드 중", detail: "비공개 보관함으로 미디어를 보내고 있습니다." },

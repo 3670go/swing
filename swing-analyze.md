@@ -398,3 +398,29 @@ Client는 Spring Boot를 호출하고, Spring Boot가 FastAPI 분석 서버를 �
 - `curl GET http://127.0.0.1:18080/actuator/health`: HTTP 200, 전체 `UP`
 - 통합 검증은 허용되지 않은 fixture host에서 모델 호출 전에 종료해 Gemini/Supabase 비용이 발생하지 않았다.
 
+### 공개 API와 제품 책임 Java 전환 — 2026-08-26
+
+- Java에 `/health`, `/v1/chat`, `/v1/analyze`, `/v1/history`, `/v1/analysis/{run_id}`와 Custom GPT Action API를 구현했다.
+- UI 기본 API 주소를 Python 8000 포트에서 Java 8080 포트로 변경했다.
+- Java가 Supabase 제품 DB와 private Storage 업로드·서명·삭제를 소유한다.
+- Java가 Python의 `CoachContent`를 사용자 대화문으로 조립하며 Python은 최종 채팅 문장을 만들지 않는다.
+- 실제 Supabase DB·Storage와 비용 없는 가짜 AI 내부 서버를 사용해 공개 채팅, 이미지 분석, 이력 조회, 삭제를 검증했다.
+- 성공한 분석의 테스트 행과 Storage 객체는 검증 후 제거했다.
+- 실제 Gemini 호출은 비용 승인이 없어 실행하지 않았다.
+
+### Python 내부 AI Processing Unit 확정 — 2026-08-26
+
+- Python 공개 API, SQLAlchemy 모델·repository, Alembic migration, Supabase Storage 쓰기 코드를 제거했다.
+- Python에는 `/internal/health`, `/internal/v1/analyses`, `/internal/v1/coaching/text`만 남겼다.
+- LangGraph는 `VisionObservation`, `BaseAssessment`, `CoachContent`까지만 생성한다.
+- Python 설정은 signed URL host 확인용 `SUPABASE_URL`, Gemini 설정, 내부 토큰, 프레임 수만 사용한다.
+- Python 의존성에서 Alembic, SQLAlchemy, psycopg, Supabase client, multipart를 제거했다.
+- Windows에서 LangGraph 전이 의존성의 native DLL 호환을 위해 `orjson==3.11.7`을 유지한다.
+- Python `ruff check --fix`, `ruff format`, `ruff check`: 통과
+- Python `unittest`: 23개 통과
+- Java `gradlew.bat test --no-daemon`: 통과
+- UI `check:runtime`, production build: 통과
+- 실제 프로세스 `curl`: Python 내부 health 200, Python 이전 공개 health·history 404
+- 실제 프로세스 `curl`: Python 내부 POST 무인증 401, 잘못된 계약 422
+- 실제 Supabase 연결 Java `curl`: health 200, 이력 0건, Action 무인증 401
+

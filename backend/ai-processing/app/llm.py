@@ -12,7 +12,6 @@ from app.config import Settings
 from app.domain.models import (
     BaseAssessment,
     CoachContent,
-    ConversationReply,
     ShotContext,
     VisionObservation,
 )
@@ -71,15 +70,6 @@ class ModelAdapter(Protocol):
         latest_analysis: dict[str, Any] | None,
         policy: dict[str, Any],
     ) -> CoachContent: ...
-
-    async def write_conversation(
-        self,
-        *,
-        user_message: str,
-        history: list[dict[str, Any]],
-        content: CoachContent,
-        policy: dict[str, Any],
-    ) -> ConversationReply: ...
 
 
 def _image_mime_type(path: Path) -> str:
@@ -274,52 +264,3 @@ class GeminiModelAdapter:
             "않는다.\n" + json.dumps(payload, ensure_ascii=False)
         )
         return await self._generate_structured(contents=prompt, schema=CoachContent)
-
-    async def write_conversation(
-        self,
-        *,
-        user_message: str,
-        history: list[dict[str, Any]],
-        content: CoachContent,
-        policy: dict[str, Any],
-    ) -> ConversationReply:
-        """Turn approved coaching content into a compact, human chat response."""
-        preserve = None
-        if policy["positive_allowed"] and content.preserve_candidate:
-            preserve = {
-                "message": content.preserve_candidate,
-                "topic": content.preserve_topic,
-            }
-        payload = {
-            "user_message": user_message,
-            "recent_dialogue": history[-6:],
-            "what_to_say": {
-                "answer": content.direct_answer,
-                "reasons": content.causal_chain,
-                "one_change": content.single_change,
-                "how_to_check": content.verification,
-                "extra_information_only_if_needed": content.follow_up_information_needed,
-                "preserve_if_natural": preserve,
-            },
-            "conversation_limits": policy,
-        }
-        prompt = (
-            "너는 앱 채팅창에서 사용자와 말로 대화하는 골프 코치다. what_to_say 안의 내용만 "
-            "사용하고 새로운 판정이나 관찰을 추가하지 않는다. message는 사용자의 마지막 말에 먼저 "
-            "반응한 뒤 핵심 답과 이유를 자연스럽게 이어 쓴다. 사용자가 자세한 설명을 요청하지 "
-            "않았다면 짧은 두 문단 이내로 쓴다. 제목, 항목명, 보고서 형식, 불릿 목록, 영문 내부 "
-            "필드명은 쓰지 않는다. 사용자가 묻지 않은 기본 클럽·촬영 각도·분석 목표를 꺼내지 "
-            "않는다. 영상이 없다는 안내를 습관적으로 붙이거나 영상을 먼저 요구하지 않는다. "
-            "conversation_limits.tone=casual이면 반드시 짧은 반말의 해체로 답하고, '합니다', "
-            "'입니다', '때문입니다', '파악해야 합니다' 같은 보고서 말투를 쓰지 않는다. 예를 들어 "
-            "'골프 실력을 체계적으로 향상시키려면 정확하게 파악해야 합니다'처럼 시작하지 말고 "
-            "'좋지. 우선 요즘 제일 자주 나오는 미스 하나부터 잡아보자'처럼 말한다. tone=polite면 "
-            "짧은 해요체를 쓴다. "
-            "positive_feedback은 preserve_if_natural이 있을 때만 간헐적으로 사용한다. 질문은 답에 "
-            "따라 다음 설명이 실제로 달라질 때만 follow_up_question에 한 개 쓰고 message 안에는 "
-            "물음표를 넣지 않는다. conversation_limits가 질문을 막으면 질문 필드는 null이고 "
-            "invite_mode=none이다. 사용자의 표현을 그대로 반복해 공감한 척하지 말고, 그 표현에서 "
-            "설명할 가치가 있는 차이를 짚어 대화를 이어 간다.\n"
-            + json.dumps(payload, ensure_ascii=False)
-        )
-        return await self._generate_structured(contents=prompt, schema=ConversationReply)

@@ -21,9 +21,7 @@ def load_fixture(name: str) -> dict:
 
 def make_settings() -> Settings:
     return Settings(
-        database_url="postgresql://user:secret@host:6543/postgres",
         supabase_url="https://project.supabase.co",
-        supabase_secret_key="server-secret-key",
         gemini_api_key="gemini-test-key",
         internal_api_token="internal-test-token",
     )

@@ -8,7 +8,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -20,7 +19,6 @@ import jakarta.persistence.Table;
 public class ConversationEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "owner_context_id", nullable = false)
@@ -50,6 +48,7 @@ public class ConversationEntity {
 	}
 
 	public ConversationEntity(UUID ownerContextId) {
+		this.id = UUID.randomUUID();
 		this.ownerContextId = ownerContextId;
 	}
 
@@ -69,5 +68,9 @@ public class ConversationEntity {
 
 	public UUID ownerContextId() {
 		return ownerContextId;
+	}
+
+	public UUID activeAnalysisRunId() {
+		return activeAnalysisRunId;
 	}
 }

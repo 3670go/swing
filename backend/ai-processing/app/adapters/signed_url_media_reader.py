@@ -8,10 +8,17 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from app.config import Settings
 from app.ports.media_reader import DownloadedMedia, RemoteMediaReference
-from app.services.media_preparation import MediaPreparationError, classify_media
 
 DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS = 30
+CONTENT_TYPE_MEDIA = {
+    "image/jpeg": ("photo", ".jpg"),
+    "image/png": ("photo", ".png"),
+    "image/webp": ("photo", ".webp"),
+    "video/mp4": ("video", ".mp4"),
+    "video/quicktime": ("video", ".mov"),
+    "video/webm": ("video", ".webm"),
+}
 
 
 class MediaReaderError(RuntimeError):
@@ -56,10 +63,10 @@ class SignedUrlMediaReader:
         if parsed.scheme != "https" or (parsed.hostname or "").lower() != self._allowed_host:
             raise MediaReaderError("MEDIA_UNAVAILABLE", "Media URL host is not approved")
 
-        try:
-            detected_kind, suffix = classify_media(media.content_type, self._settings)
-        except MediaPreparationError as error:
-            raise MediaReaderError("MEDIA_TYPE_UNSUPPORTED", "Unsupported media type") from error
+        classified_media = CONTENT_TYPE_MEDIA.get(media.content_type.lower())
+        if classified_media is None:
+            raise MediaReaderError("MEDIA_TYPE_UNSUPPORTED", "Unsupported media type")
+        detected_kind, suffix = classified_media
         if detected_kind != media.kind:
             raise MediaReaderError(
                 "MEDIA_TYPE_UNSUPPORTED",

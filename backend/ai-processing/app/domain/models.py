@@ -11,14 +11,6 @@ AssessmentCategory = Literal[
     "tempo_shape",
 ]
 EvidenceMode = Literal["text_only", "photo_limited", "video_ready"]
-InviteMode = Literal[
-    "none",
-    "compare_good_bad",
-    "locate_timing",
-    "recall_specific_shot",
-    "connect_body_feel",
-    "follow_up_experiment",
-]
 
 
 class ShotContext(BaseModel):
@@ -108,32 +100,3 @@ class CoachContent(BaseModel):
         if (self.preserve_candidate is None) != (self.preserve_topic is None):
             raise ValueError("Preserve candidate and topic must be supplied together")
         return self
-
-
-class ConversationReply(BaseModel):
-    """Only these fields may be rendered in the chat surface."""
-
-    message: str = Field(min_length=1, max_length=900)
-    positive_feedback: str | None = Field(default=None, max_length=220)
-    positive_topic: str | None = Field(default=None, max_length=80)
-    follow_up_question: str | None = Field(default=None, max_length=180)
-    question_topic: str | None = Field(default=None, max_length=80)
-    invite_mode: InviteMode = "none"
-
-    @model_validator(mode="after")
-    def require_paired_optional_fields(self) -> "ConversationReply":
-        if (self.positive_feedback is None) != (self.positive_topic is None):
-            raise ValueError("Positive feedback and topic must be supplied together")
-        if (self.follow_up_question is None) != (self.question_topic is None):
-            raise ValueError("Follow-up question and topic must be supplied together")
-        if self.follow_up_question is None and self.invite_mode != "none":
-            raise ValueError("Invite mode requires a follow-up question")
-        return self
-
-
-class CoachReply(BaseModel):
-    """Validated analysis bundle returned by media analysis."""
-
-    base_assessment: BaseAssessment
-    content: CoachContent
-    conversation: ConversationReply

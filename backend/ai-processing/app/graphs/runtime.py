@@ -3,11 +3,7 @@ from typing import Any, Literal, NotRequired, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from app.conversation_policy import (
-    ConversationPolicy,
-    build_conversation_policy,
-    enforce_conversation_policy,
-)
+from app.conversation_policy import ConversationPolicy, build_conversation_policy
 from app.domain.analysis_policy import (
     AnalysisPolicyViolation,
     build_base_assessment,
@@ -18,8 +14,6 @@ from app.domain.analysis_policy import (
 from app.domain.models import (
     BaseAssessment,
     CoachContent,
-    CoachReply,
-    ConversationReply,
     ShotContext,
     VisionObservation,
 )
@@ -37,8 +31,6 @@ class TextGraphState(TypedDict):
     latest_analysis: dict[str, Any] | None
     policy: NotRequired[ConversationPolicy]
     content: NotRequired[CoachContent]
-    reply: NotRequired[ConversationReply]
-    interaction_meta: NotRequired[dict[str, Any]]
 
 
 class AnalysisGraphState(TypedDict):
@@ -51,9 +43,6 @@ class AnalysisGraphState(TypedDict):
     base_assessment: NotRequired[BaseAssessment]
     policy: NotRequired[ConversationPolicy]
     content: NotRequired[CoachContent]
-    conversation: NotRequired[ConversationReply]
-    reply: NotRequired[CoachReply | None]
-    interaction_meta: NotRequired[dict[str, Any]]
     status: NotRequired[Literal["succeeded", "limited", "rejected"]]
 
 
@@ -140,37 +129,6 @@ def build_text_content_graph(model: ModelAdapter):
     return builder.compile()
 
 
-def build_text_graph(model: ModelAdapter):
-    """Generate coaching content, then write the user-facing message."""
-
-    async def write_conversation(state: TextGraphState) -> dict[str, ConversationReply]:
-        reply = await model.write_conversation(
-            user_message=state["message"],
-            history=state["history"],
-            content=state["content"],
-            policy=state["policy"].prompt_payload(),
-        )
-        return {"reply": reply}
-
-    def guard_surface(state: TextGraphState) -> dict[str, Any]:
-        reply, interaction_meta = enforce_conversation_policy(
-            state["reply"],
-            state["policy"],
-            state["content"],
-        )
-        return {"reply": reply, "interaction_meta": interaction_meta}
-
-    builder = StateGraph(TextGraphState)
-    builder.add_node("content_pipeline", build_text_content_graph(model))
-    builder.add_node("conversation_writer", write_conversation)
-    builder.add_node("surface_guard", guard_surface)
-    builder.add_edge(START, "content_pipeline")
-    builder.add_edge("content_pipeline", "conversation_writer")
-    builder.add_edge("conversation_writer", "surface_guard")
-    builder.add_edge("surface_guard", END)
-    return builder.compile()
-
-
 def build_analysis_content_graph(model: ModelAdapter):
     """Freeze visual evidence and compose content without surface writing."""
 
@@ -233,51 +191,4 @@ def build_analysis_content_graph(model: ModelAdapter):
     builder.add_edge("compose_content", "content_guard")
     builder.add_edge("content_guard", "complete_content")
     builder.add_edge("complete_content", END)
-    return builder.compile()
-
-
-def build_analysis_graph(model: ModelAdapter):
-    """Generate frozen analysis content, then write the user-facing message."""
-
-    def route_surface(state: AnalysisGraphState) -> str:
-        return "reject" if state["status"] == "rejected" else "write"
-
-    async def write_conversation(state: AnalysisGraphState) -> dict[str, ConversationReply]:
-        conversation = await model.write_conversation(
-            user_message=state["question"] or "스윙 전체를 봐줘",
-            history=state["history"],
-            content=state["content"],
-            policy=state["policy"].prompt_payload(),
-        )
-        return {"conversation": conversation}
-
-    def guard_surface(state: AnalysisGraphState) -> dict[str, Any]:
-        conversation, interaction_meta = enforce_conversation_policy(
-            state["conversation"],
-            state["policy"],
-            state["content"],
-        )
-        reply = CoachReply(
-            base_assessment=state["base_assessment"],
-            content=state["content"],
-            conversation=conversation,
-        )
-        return {
-            "conversation": conversation,
-            "reply": reply,
-            "interaction_meta": interaction_meta,
-        }
-
-    builder = StateGraph(AnalysisGraphState)
-    builder.add_node("content_pipeline", build_analysis_content_graph(model))
-    builder.add_node("conversation_writer", write_conversation)
-    builder.add_node("surface_guard", guard_surface)
-    builder.add_edge(START, "content_pipeline")
-    builder.add_conditional_edges(
-        "content_pipeline",
-        route_surface,
-        {"reject": END, "write": "conversation_writer"},
-    )
-    builder.add_edge("conversation_writer", "surface_guard")
-    builder.add_edge("surface_guard", END)
     return builder.compile()

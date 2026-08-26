@@ -10,7 +10,6 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -23,7 +22,6 @@ import jakarta.persistence.Table;
 public class SwingSessionEntity {
 
 	@Id
-	@GeneratedValue
 	private UUID id;
 
 	@Column(name = "owner_context_id", nullable = false)
@@ -67,6 +65,7 @@ public class SwingSessionEntity {
 	public SwingSessionEntity(UUID ownerContextId, UUID conversationId, String shotProfile, String club,
 			String cameraView, String handedness, String userQuestion, String userFeel,
 			Map<String, Object> shotResult, UUID comparisonSessionId) {
+		this.id = UUID.randomUUID();
 		this.ownerContextId = ownerContextId;
 		this.conversationId = conversationId;
 		this.shotProfile = shotProfile;
@@ -85,5 +84,17 @@ public class SwingSessionEntity {
 
 	public UUID ownerContextId() {
 		return ownerContextId;
+	}
+
+	public UUID conversationId() {
+		return conversationId;
+	}
+
+	public String club() {
+		return club;
+	}
+
+	public String cameraView() {
+		return cameraView;
 	}
 }
