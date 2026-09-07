@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Conversation State Tracker POC</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="banner">
+  <strong>대화 상태 추적 POC</strong>
+  <span>상태 추적 결과를 확인하는 도구입니다. 골프 코칭 답변이 아닙니다. 외부 LLM·DB 를 사용하지 않습니다.</span>
+</header>
+
+<main>
+  <section class="chat" aria-label="채팅">
+    <div class="toolbar">
+      <label for="topic-select">코칭 주제</label>
+      <select id="topic-select"></select>
+      <button id="new-topic" type="button">새 주제</button>
+      <button id="reset" type="button" class="danger">세션 초기화</button>
+    </div>
+
+    <div id="messages" class="messages" aria-live="polite"></div>
+
+    <form id="composer" class="composer">
+      <textarea id="input" rows="2" placeholder="메시지를 입력하세요" required></textarea>
+      <button type="submit">전송</button>
+    </form>
+
+    <details class="simulator">
+      <summary>입력 시뮬레이터 (행동 이벤트 · Open Loop · 영상 분석 결과)</summary>
+      <div class="sim-grid">
+        <fieldset>
+          <legend>행동 이벤트</legend>
+          <select id="event-type">
+            <option value="PRACTICE_RESULT_REPORTED">연습 결과 보고</option>
+            <option value="VIDEO_UPLOADED">영상 업로드</option>
+            <option value="FOLLOW_UP_QUESTION">추가 질문</option>
+            <option value="TOPIC_REPEATED">같은 주제 반복</option>
+            <option value="RETURNED_TO_CONVERSATION">대화 복귀</option>
+          </select>
+          <label>연결할 Open Loop
+            <select id="event-loop"><option value="">(없음)</option></select>
+          </label>
+          <button id="add-event" type="button">이벤트 추가</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Open Loop</legend>
+          <input id="loop-text" type="text" placeholder="다음에 확인할 항목" />
+          <button id="add-loop" type="button">현재 주제에 추가</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>영상 분석 결과 (외부 입력)</legend>
+          <input id="video-observation" type="text" placeholder="영상에서 확인한 관찰" />
+          <label>신뢰도
+            <select id="video-confidence">
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="LOW">LOW</option>
+            </select>
+          </label>
+          <label>비교 판정
+            <select id="video-comparison">
+              <option value="NOT_COMPARED">NOT_COMPARED</option>
+              <option value="IMPROVED">IMPROVED</option>
+              <option value="UNCHANGED">UNCHANGED</option>
+              <option value="REGRESSED">REGRESSED</option>
+            </select>
+          </label>
+          <label>비교 대상
+            <select id="video-compared-to"><option value="">(없음)</option></select>
+          </label>
+          <button id="add-video" type="button">분석 결과 추가</button>
+        </fieldset>
+      </div>
+      <p class="hint">대화 엔진은 영상 관찰과 비교 판정을 만들지 않습니다. 여기서 넣은 값만 근거로 씁니다.</p>
+    </details>
+  </section>
+
+  <aside class="panel" aria-label="상태 확인">
+    <h2>상태 확인</h2>
+    <p id="panel-error" class="error" hidden></p>
+
+    <details open><summary>활성 코칭 주제</summary><div id="p-topic"></div></details>
+    <details open><summary>명시적 질문 목적</summary><div id="p-intent"></div></details>
+    <details open><summary>추정 니즈</summary><div id="p-needs"></div></details>
+    <details open><summary>참여도</summary><div id="p-engagement"></div></details>
+    <details open><summary>발전 상태</summary><div id="p-progress"></div></details>
+    <details open><summary>응답 전략</summary><div id="p-strategy"></div></details>
+    <details><summary>사용된 근거 (EvidenceReference)</summary><div id="p-evidence"></div></details>
+    <details><summary>컨텍스트로 선택된 메시지</summary><div id="p-context"></div></details>
+    <details open><summary>PENDING Open Loop</summary><div id="p-loops"></div></details>
+    <details><summary>추정 변경 이력</summary><div id="p-history"></div></details>
+  </aside>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

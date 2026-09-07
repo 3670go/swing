@@ -1,0 +1,26 @@
+{
+  "user_id": "u4",
+  "conversation_id": "c4",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "안녕하세요. 어떤 부분이 가장 신경 쓰이시나요?",
+      "created_at": "2026-08-27T09:00:00+09:00",
+      "topic_id": null
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "자꾸 당겨 치는데 왜 그런 거야?",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": null
+    }
+  ],
+  "behavior_events": [],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": null,
+  "prior_state": null,
+  "open_loops": []
+}

@@ -1,0 +1,62 @@
+{
+  "user_id": "u12",
+  "conversation_id": "c12",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "다음 연습까지 손이 먼저 내려오는 감각을 유지해보세요.",
+      "created_at": "2026-08-27T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "알겠습니다 확인해볼게요",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "behavior_events": [
+    {
+      "event_id": "b1",
+      "event_type": "VIDEO_UPLOADED",
+      "related_message_id": "m2",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": "t1",
+      "open_loop_id": null
+    },
+    {
+      "event_id": "b2",
+      "event_type": "PRACTICE_RESULT_REPORTED",
+      "related_message_id": null,
+      "created_at": "2026-08-27T11:00:00+09:00",
+      "topic_id": "t2",
+      "open_loop_id": "ol2"
+    }
+  ],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": {
+    "topic_id": "t1",
+    "user_problem": "드라이버를 당겨 친다",
+    "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+  },
+  "open_loops": [
+    {
+      "open_loop_id": "ol1",
+      "topic_id": "t1",
+      "next_verification": "드라이버 전환 공간이 유지되는지 확인한다.",
+      "state": "PENDING",
+      "created_at": "2026-08-26T09:00:00+09:00"
+    },
+    {
+      "open_loop_id": "ol2",
+      "topic_id": "t2",
+      "next_verification": "아이언 체중 이동을 확인한다.",
+      "state": "PENDING",
+      "created_at": "2026-08-26T10:00:00+09:00"
+    }
+  ],
+  "prior_state": null
+}

@@ -1,0 +1,135 @@
+{
+  "user_id": "u8",
+  "conversation_id": "c8",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "전환에서 손이 먼저 내려오는 순서를 유지해보세요.",
+      "created_at": "2026-08-27T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "손이 먼저 내려오는 게 맞나요?",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m3",
+      "role": "assistant",
+      "text": "네, 그 순서가 맞습니다.",
+      "created_at": "2026-08-27T11:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m4",
+      "role": "user",
+      "text": "이렇게 하는 거 맞나요?",
+      "created_at": "2026-08-27T12:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m5",
+      "role": "assistant",
+      "text": "지금 방향으로 계속 가시면 됩니다.",
+      "created_at": "2026-08-27T13:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m6",
+      "role": "user",
+      "text": "확신이 필요한 게 아니라 설명이 너무 어려워.",
+      "created_at": "2026-08-27T14:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "behavior_events": [
+    {
+      "event_id": "b1",
+      "event_type": "TOPIC_REPEATED",
+      "related_message_id": "m4",
+      "created_at": "2026-08-27T12:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": {
+    "topic_id": "t1",
+    "user_problem": "드라이버를 당겨 친다",
+    "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+  },
+  "prior_state": {
+    "explicit_intent": "DIRECTION_CONFIRMATION",
+    "active_coaching_topic": {
+      "topic_id": "t1",
+      "user_problem": "드라이버를 당겨 친다",
+      "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+    },
+    "confirmed_user_facts": [],
+    "style_baseline": null,
+    "inferred_needs": [
+      {
+        "confidence": "LOW",
+        "evidence": [
+          {
+            "source_type": "BEHAVIOR_EVENT",
+            "source_id": "b1"
+          },
+          {
+            "source_type": "MESSAGE",
+            "source_id": "m2"
+          },
+          {
+            "source_type": "MESSAGE",
+            "source_id": "m4"
+          }
+        ],
+        "reason": "같은 방향을 반복 확인했다. 불안이나 불신으로 확정하지 않는다",
+        "last_updated_at": "2026-08-28T12:00:00+09:00",
+        "need_type": "NEEDS_CERTAINTY"
+      }
+    ],
+    "engagement_state": {
+      "confidence": "LOW",
+      "evidence": [
+        {
+          "source_type": "MESSAGE",
+          "source_id": "m4"
+        }
+      ],
+      "reason": "사용자 기준선을 만들 표본이 부족하다",
+      "last_updated_at": "2026-08-28T12:00:00+09:00",
+      "level": "UNKNOWN",
+      "trend": "UNKNOWN"
+    },
+    "progress": {
+      "confidence": "LOW",
+      "evidence": [
+        {
+          "source_type": "MESSAGE",
+          "source_id": "m4"
+        }
+      ],
+      "reason": "발전 근거 없음",
+      "last_updated_at": "2026-08-28T12:00:00+09:00",
+      "level": "NONE",
+      "swing_improvement_confirmed": false,
+      "recognition_intensity_cap": "NONE"
+    },
+    "open_loops": [],
+    "unresolved_open_loops": [],
+    "next_response_strategy": "ANSWER_DIRECTLY",
+    "secondary_strategy": null,
+    "selected_context_message_ids": [
+      "m1",
+      "m2",
+      "m3",
+      "m4"
+    ],
+    "inference_history": []
+  },
+  "open_loops": []
+}

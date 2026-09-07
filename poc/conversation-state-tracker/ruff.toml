@@ -1,0 +1,7 @@
+# backend/ai-processing/pyproject.toml 의 [tool.ruff] 설정과 동일하게 맞춘다.
+# POC 는 그 프로젝트 밖에 있어 설정이 상속되지 않으므로 여기에 복제한다.
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

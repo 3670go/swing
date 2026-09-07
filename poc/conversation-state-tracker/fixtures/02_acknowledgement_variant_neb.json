@@ -1,0 +1,26 @@
+{
+  "user_id": "u1",
+  "conversation_id": "c1",
+  "messages": [
+    {
+      "message_id": "m10",
+      "role": "assistant",
+      "text": "다음 연습에서는 손이 먼저 내려온 뒤 회전하는 느낌으로 세 번의 결과를 확인해보세요.",
+      "created_at": "2026-08-27T09:00:00+09:00",
+      "topic_id": null
+    },
+    {
+      "message_id": "m11",
+      "role": "user",
+      "text": "넵",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": null
+    }
+  ],
+  "behavior_events": [],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": null,
+  "prior_state": null,
+  "open_loops": []
+}

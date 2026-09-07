@@ -1,0 +1,151 @@
+{
+  "user_id": "u18",
+  "conversation_id": "c18",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "아 씨발 오늘도 드라이버가 오른쪽으로 밀리는데 이거 셋업부터 다시 봐야 하나 싶다 진짜",
+      "created_at": "2026-08-25T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m3",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m4",
+      "role": "user",
+      "text": "존나 답답하네 아이언은 괜찮은데 우드만 잡으면 톱볼이 나오는 이유가 뭔지 감이 안 잡힌다",
+      "created_at": "2026-08-25T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m5",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T11:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m6",
+      "role": "user",
+      "text": "ㅅㅂ 연습장에서 백 개 넘게 쳤는데 방향은 그대로고 거리만 조금 늘어난 느낌이라 애매하다",
+      "created_at": "2026-08-25T11:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m7",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T12:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m8",
+      "role": "user",
+      "text": "아 진짜 존나 헷갈리네 백스윙을 크게 가져가면 정확도가 떨어지고 줄이면 거리가 안 나온다",
+      "created_at": "2026-08-25T12:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m9",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T13:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m10",
+      "role": "user",
+      "text": "씨발 라운딩 나가면 왜 연습장이랑 완전 다른 스윙이 나오는지 그것부터 좀 정리하고 싶다",
+      "created_at": "2026-08-25T13:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m11",
+      "role": "assistant",
+      "text": "지금 말씀하신 부분을 전환 구간 기준으로 정리해보겠습니다.",
+      "created_at": "2026-08-25T14:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m12",
+      "role": "user",
+      "text": "빡치는 게 같은 클럽인데 어떤 날은 잘 가고 어떤 날은 완전 다르게 날아간다는 점이다",
+      "created_at": "2026-08-25T14:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m13",
+      "role": "assistant",
+      "text": "말씀하신 내용을 현재 코칭 주제와 연결해보겠습니다.",
+      "created_at": "2026-08-26T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m14",
+      "role": "user",
+      "text": "존나 신경 쓰이는 게 임팩트 직전에 손이 어디 있는지 스스로 인지가 안 되는 부분이다 진짜",
+      "created_at": "2026-08-26T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m15",
+      "role": "assistant",
+      "text": "말씀하신 내용을 현재 코칭 주제와 연결해보겠습니다.",
+      "created_at": "2026-08-26T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m16",
+      "role": "user",
+      "text": "ㅅㅂ 후방 영상 보니까 몸통이 먼저 열리는 것처럼 보이는데 이게 원인 맞는지 궁금하다",
+      "created_at": "2026-08-26T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m17",
+      "role": "assistant",
+      "text": "말씀하신 내용을 현재 코칭 주제와 연결해보겠습니다.",
+      "created_at": "2026-08-26T11:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m18",
+      "role": "user",
+      "text": "아 씨발 이거 왜 자꾸 오른쪽으로 밀리는 거야 전환에서 뭐가 문제인지 알려줘 진짜 답답하다",
+      "created_at": "2026-08-26T11:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "behavior_events": [
+    {
+      "event_id": "b_other",
+      "event_type": "FOLLOW_UP_QUESTION",
+      "related_message_id": "m18",
+      "created_at": "2026-08-26T11:00:00+09:00",
+      "topic_id": "t2",
+      "open_loop_id": null
+    }
+  ],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": {
+    "topic_id": "t1",
+    "user_problem": "드라이버를 당겨 친다",
+    "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+  },
+  "prior_state": null,
+  "open_loops": []
+}

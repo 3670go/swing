@@ -1,0 +1,135 @@
+{
+  "user_id": "u11",
+  "conversation_id": "c11",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "드라이버 전환 공간에 대한 답변 1입니다.",
+      "created_at": "2026-08-26T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "드라이버 전환에서 손이 늦게 내려오는 느낌이 계속됩니다 1",
+      "created_at": "2026-08-26T09:10:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m3",
+      "role": "assistant",
+      "text": "아이언 체중 이동에 대한 답변 1입니다.",
+      "created_at": "2026-08-26T09:20:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m4",
+      "role": "user",
+      "text": "아이언 칠 때 오른발에 체중이 남는 느낌입니다 1",
+      "created_at": "2026-08-26T09:30:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m5",
+      "role": "assistant",
+      "text": "드라이버 전환 공간에 대한 답변 2입니다.",
+      "created_at": "2026-08-26T10:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m6",
+      "role": "user",
+      "text": "드라이버 전환에서 손이 늦게 내려오는 느낌이 계속됩니다 2",
+      "created_at": "2026-08-26T10:10:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m7",
+      "role": "assistant",
+      "text": "아이언 체중 이동에 대한 답변 2입니다.",
+      "created_at": "2026-08-26T10:20:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m8",
+      "role": "user",
+      "text": "아이언 칠 때 오른발에 체중이 남는 느낌입니다 2",
+      "created_at": "2026-08-26T10:30:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m9",
+      "role": "assistant",
+      "text": "드라이버 전환 공간에 대한 답변 3입니다.",
+      "created_at": "2026-08-26T11:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m10",
+      "role": "user",
+      "text": "드라이버 전환에서 손이 늦게 내려오는 느낌이 계속됩니다 3",
+      "created_at": "2026-08-26T11:10:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m11",
+      "role": "assistant",
+      "text": "아이언 체중 이동에 대한 답변 3입니다.",
+      "created_at": "2026-08-26T11:20:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m12",
+      "role": "user",
+      "text": "아이언 칠 때 오른발에 체중이 남는 느낌입니다 3",
+      "created_at": "2026-08-26T11:30:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m13",
+      "role": "assistant",
+      "text": "드라이버 전환 공간에 대한 답변 4입니다.",
+      "created_at": "2026-08-26T12:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m14",
+      "role": "user",
+      "text": "드라이버 전환에서 손이 늦게 내려오는 느낌이 계속됩니다 4",
+      "created_at": "2026-08-26T12:10:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m15",
+      "role": "assistant",
+      "text": "아이언 체중 이동에 대한 답변 4입니다.",
+      "created_at": "2026-08-26T12:20:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m16",
+      "role": "user",
+      "text": "아이언 칠 때 오른발에 체중이 남는 느낌입니다 4",
+      "created_at": "2026-08-26T12:30:00+09:00",
+      "topic_id": "t2"
+    },
+    {
+      "message_id": "m17",
+      "role": "user",
+      "text": "드라이버 전환 공간 이야기를 이어서 하고 싶은데 왜 아직 손이 늦을까?",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "behavior_events": [],
+  "feedback_events": [],
+  "video_evidence": [],
+  "active_coaching_topic": {
+    "topic_id": "t1",
+    "user_problem": "드라이버를 당겨 친다",
+    "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+  },
+  "open_loops": [],
+  "prior_state": null
+}

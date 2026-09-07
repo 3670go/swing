@@ -1,0 +1,39 @@
+{
+  "user_id": "u7b",
+  "conversation_id": "cu7b",
+  "messages": [
+    {
+      "message_id": "m1",
+      "role": "assistant",
+      "text": "전환에서 손이 먼저 내려오는 순서를 유지해보세요.",
+      "created_at": "2026-08-27T09:00:00+09:00",
+      "topic_id": "t1"
+    },
+    {
+      "message_id": "m2",
+      "role": "user",
+      "text": "확인했어요",
+      "created_at": "2026-08-27T10:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "behavior_events": [],
+  "feedback_events": [
+    {
+      "feedback_id": "f1",
+      "target_message_id": "m1",
+      "feedback_type": "HELPFUL",
+      "reason": null,
+      "created_at": "2026-08-27T11:00:00+09:00",
+      "topic_id": "t1"
+    }
+  ],
+  "video_evidence": [],
+  "active_coaching_topic": {
+    "topic_id": "t1",
+    "user_problem": "드라이버를 당겨 친다",
+    "root_problem": "전환에서 팔이 내려올 공간이 부족하다"
+  },
+  "prior_state": null,
+  "open_loops": []
+}
