@@ -5,7 +5,9 @@
 
 ## 전환 상태
 
-현재 FastAPI 코드는 `backend/ai-processing/app`, `backend/ai-processing/tests`로 이동했다. 내부 API 구현과 공개 API 제거는 후속 task이며, 현재 단계에서는 기존 동작을 유지한다.
+현재 FastAPI 코드는 `backend/ai-processing/app`, `backend/ai-processing/tests`에 있다.
+Java 전용 내부 API 전환과 Python 공개 API·제품 DB 접근 제거가 완료됐으며,
+Python은 AI Processing Unit 책임만 가진다.
 
 ## 확정된 책임
 
@@ -16,6 +18,10 @@
 - Gemini API 및 LangGraph 실행
 - FEEL/OBSERVATION/MEASUREMENT 분석 규약
 - VisionObservation, BaseAssessment, CoachContent 생성
+- ContextPacket 해석
+- CoachingTurnPlan 후보 생성
+- 영상 관찰과 기존 컨텍스트의 일치·충돌 판정
+- 주제 재정의, 로드맵 갱신, 진행 인정, Open Loop 후보 생성
 - 구조화된 분석 결과를 Spring Boot에 반환
 
 ## 목표 패키지 구조
@@ -46,9 +52,15 @@ ai-processing/
 │  │  ├─ gemini_model.py
 │  │  └─ signed_url_media_reader.py
 │  └─ graphs/
-│     └─ runtime.py
+│     ├─ runtime.py
+│     ├─ coaching_state.py
+│     ├─ coaching_nodes.py
+│     └─ coaching_guards.py
 └─ tests/
 ```
+
+추가된 graph 파일은 목표 책임 배치다. 기존 graph 구현을 한 번에 이동하지 않고,
+기능 변경과 분리한 구조 변경 task에서 순차적으로 맞춘다.
 
 ## 전환 후 제거할 책임
 
@@ -57,7 +69,8 @@ ai-processing/
 - 제품 분석 상태와 삭제·보관 정책
 - 사용자에게 반환하는 최종 API 응답 조립
 
-현재 Python Repository는 Java로 제품 DB 소유권을 이전할 때까지 유지하는 전환 책임이다. 별도 task와 검증 없이 제거하지 않는다.
+Python에는 제품 Repository와 migration을 두지 않는다.
+컨텍스트와 코칭 상태는 Java가 저장하고, Python은 요청에 포함된 ContextPacket만 사용한다.
 
 ## 확정된 내부 API
 
@@ -65,6 +78,8 @@ ai-processing/
 - `POST /internal/v1/analyses`
 - `POST /internal/v1/coaching/text`
 - 요청·응답 원본 계약은 `internal-api.openapi.yaml`이다.
+- 컨텍스트 코칭의 목표 schema와 상태 규칙은 `context-aware-coaching-contract.md`를 따른다.
+- OpenAPI 2.0.0과 공통 fixture는 2026-08-26에 동결했으며 Python 구현 task에서 수정하지 않는다.
 - 분석·코칭 요청은 응답이 완성될 때까지 기다리는 동기 HTTP 방식이다.
 - 분석 미디어는 signed read URL에서 임시 디렉터리로 내려받고 요청 종료 후 제거한다.
 - Python은 signed URL, 사용자 원문, 인증 token을 로그에 남기지 않는다.

@@ -3,6 +3,9 @@
 상태: CONFIRMED — 2026-08-26
 기계 판독 가능한 원본 계약: `internal-api.openapi.yaml`
 
+컨텍스트 추적, 코칭 주제, 로드맵, 진행 인정, Open Loop의 제품 규칙은
+`context-aware-coaching-contract.md`를 따른다.
+
 ## 호출 방향
 
 ```text
@@ -35,9 +38,12 @@ Python은 공개 API, 사용자 식별, 권한, 이력 조회, 삭제를 처리�
 - `POST /internal/v1/analyses`
 - `POST /internal/v1/coaching/text`
 
-요청·응답의 필드, enum, 길이 제한은 `internal-api.openapi.yaml`을 따른다. Java와 Python 테스트는 `fixtures/`의 같은 JSON을 사용한다.
+요청·응답의 필드, enum, 길이 제한은 2026-08-26에 동결한
+`internal-api.openapi.yaml` 2.0.0을 따른다. Java와 Python 테스트는 `fixtures/`의 같은 JSON을
+사용한다. 구현 task는 OpenAPI와 fixture를 수정하지 않고 코드가 계약에 맞도록 변경한다.
 
-텍스트 코칭 요청에는 최근 assistant 메시지의 `interaction_meta`와 `has_latest_analysis`를 포함한다. 이는 질문·칭찬 반복을 제한하는 대화 정책 입력이며 제품 이력의 소유권은 계속 Java에 있다.
+Java는 최근 대화, 분석 근거와 코칭 상태를 제한에 맞게 선택한 `ContextPacket`을 조립해
+전달한다. 제품 이력의 소유권은 계속 Java에 있다.
 
 ## 데이터 소유권
 
@@ -48,6 +54,11 @@ Python은 공개 API, 사용자 식별, 권한, 이력 조회, 삭제를 처리�
 - SwingSession과 AnalysisRun 제품 상태
 - 미디어 메타데이터와 Storage object path
 - 분석 이력, 권한, 삭제, 보관 정책
+- 사용자 컨텍스트 사실과 근거
+- 코칭 주제와 주제 상태
+- 로드맵과 마일스톤
+- 진행 사건, 인정 노출 이력과 Open Loop
+- Python 호출용 Context Snapshot
 - Client-facing 최종 응답
 - 제품 DB migration
 
@@ -56,6 +67,8 @@ Python은 공개 API, 사용자 식별, 권한, 이력 조회, 삭제를 처리�
 - 질문과 FEEL을 반영하기 전 `VisionObservation`
 - 동결된 `BaseAssessment`
 - 근거 범위가 검증된 `CoachContent`
+- `ContextPacket`을 해석한 `CoachingTurnPlan` 후보
+- 영상 관찰과 기존 컨텍스트의 일치·충돌 판정
 - FFmpeg/FFprobe, Gemini, LangGraph 실행 결과
 
 Python은 제품 이력의 원본 시스템이 아니며 Java 소유 제품 테이블을 읽거나 수정하지 않는다.
@@ -65,8 +78,8 @@ Python은 제품 이력의 원본 시스템이 아니며 Java 소유 제품 테�
 1. 미디어와 촬영 조건만으로 `VisionObservation`을 생성한다.
 2. `BaseAssessment`를 확정하고 변경 불가능하게 동결한다.
 3. 이후 `user_question`, `user_feel`, `shot_result`, 대화 이력을 후순위 컨텍스트로 반영한다.
-4. `CoachContent`를 Java에 반환한다.
-5. Java가 `CoachContent`를 사용자용 대화로 렌더링하고 저장한다.
+4. `CoachContent`를 포함한 `CoachingTurnPlan` 후보를 Java에 반환한다.
+5. Java가 상태 전이와 중복 노출 규칙을 검증하고 사용자용 대화를 조립해 저장한다.
 
 사용자 질문이나 FEEL 때문에 `VisionObservation` 또는 `BaseAssessment`가 바뀌면 계약 위반이다.
 
@@ -98,9 +111,9 @@ Python은 제품 이력의 원본 시스템이 아니며 Java 소유 제품 테�
 
 ## 성공 상태 규칙
 
-- `succeeded`: `observation`, `base_assessment`, `coach_content`가 모두 존재한다.
+- `succeeded`: `observation`, `base_assessment`, `coaching_turn_plan`이 모두 존재한다.
 - `limited`: 제한된 근거라도 위 세 객체가 존재하고 `cannot_determine`에 한계를 기록한다.
-- `rejected`: 비골프 미디어이며 `observation.is_golf_media=false`, `base_assessment=null`, `coach_content=null`이다.
+- `rejected`: 비골프 미디어이며 `observation.is_golf_media=false`, `base_assessment=null`, `coaching_turn_plan=null`이다.
 
 ## 실패 계약
 
@@ -120,18 +133,18 @@ Python은 제품 이력의 원본 시스템이 아니며 Java 소유 제품 테�
 
 원본 Provider 오류와 시크릿은 사용자 응답에 포함하지 않는다.
 
-## DB 이전 규칙
+## DB migration 규칙
 
-1. Java가 기존 제품 테이블을 읽고 쓰는 Repository와 migration 소유권을 준비한다.
-2. API별 전환 시점 전까지 기존 Python Repository를 유지한다.
-3. 하나의 제품 데이터에는 Java 또는 Python 중 한쪽만 쓰는 single-writer 원칙을 지킨다.
-4. Java 쓰기 경로의 통합 검증이 끝난 뒤 해당 Python 쓰기 경로를 제거한다.
-5. 최종 전환 후 Python에서 SQLAlchemy, Alembic, 제품 DB 설정을 제거한다.
+1. Java가 제품 DB의 유일한 쓰기 소유자다.
+2. Python에는 SQLAlchemy/Alembic migration과 제품 Repository를 두지 않는다.
+3. 컨텍스트, 코칭 주제, 로드맵, 진행, Open Loop 관련 migration은 Java/Flyway에서만 관리한다.
+4. migration 변경과 기능 구현은 별도 작업으로 진행한다.
 
 ## 변경·검증
 
 - 계약문서 변경, Python 이동, Java 생성, 내부 API 구현, DB 이전, 공개 API 전환을 별도 task로 진행한다.
 - 계약 변경 시 OpenAPI와 모든 fixture를 같은 task에서 갱신한다.
 - Java와 Python은 같은 fixture로 contract test를 실행한다.
+- `context-aware-coaching-contract.md`의 상태 전이와 노출 규칙을 검증한다.
 - 양쪽 단위 테스트 후 Java 공개 API에서 Python 내부 API까지 `curl`로 검증한다.
 - Provider E2E 실행 여부와 비용 발생 여부를 결과에 명시한다.

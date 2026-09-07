@@ -9,9 +9,14 @@
 1. `contracts/java-package-structure.md`
 2. `contracts/python-package-structure.md`
 3. `contracts/java-python-boundary.md`
-4. `contracts/internal-api.openapi.yaml`
+4. `contracts/context-aware-coaching-contract.md`
+5. `contracts/internal-api.openapi.yaml`
 
 `contracts/fixtures/`의 요청·응답 예시는 양쪽 구현이 공유하는 contract fixture다.
+
+`internal-api.openapi.yaml` 2.0.0과 `contracts/fixtures/`는 2026-08-26 동결 계약이다.
+Java/Python 구현 task에서는 수정하지 않고, 변경이 필요하면 별도 계약 변경 plan과 confirm을
+먼저 받는다.
 
 문서의 `확정`과 `미결정`을 구분한다. 미결정 항목을 확정 계약처럼 구현하지 않는다.
 

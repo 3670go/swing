@@ -18,6 +18,10 @@
 - 사용자·익명 세션·대화·메시지·분석 이력
 - 분석 실행 상태와 제품 DB 소유권
 - 미디어 메타데이터, 권한, 삭제, 보관 정책
+- 사용자 컨텍스트 사실과 근거
+- 코칭 주제와 상태 전이
+- 로드맵, 마일스톤, 진행 사건과 인정 노출 이력
+- Open Loop와 Context Snapshot
 - Python/FastAPI 내부 분석 API 호출
 - 사용자에게 반환할 최종 응답 조립
 
@@ -40,6 +44,8 @@ src/main/java/com/swinganalyzer/
 │  ├─ application/
 │  ├─ domain/
 │  └─ infrastructure/
+│     ├─ persistence/
+│     └─ aiclient/
 ├─ media/
 │  ├─ api/
 │  ├─ application/
@@ -54,6 +60,13 @@ src/main/java/com/swinganalyzer/
 
 패키지는 기능별로 나누고 각 기능 안에서 `api → application → domain ← infrastructure` 의존 방향을 유지한다.
 
+컨텍스트 코칭 기능은 별도 최상위 도메인을 중복 생성하지 않고 `conversation` 경계 안에 둔다.
+
+- `conversation/domain`: CoachingTopic, Roadmap, Milestone, ProgressEvent, RecognitionExposure, OpenLoop
+- `conversation/application`: ContextPacket 조립, 주제 전이, 로드맵 갱신, Progress Moment 판정
+- `conversation/infrastructure/aiclient`: Python 내부 API 호출과 CoachingTurnPlan 매핑
+- `conversation/infrastructure/persistence`: 컨텍스트와 코칭 상태 저장
+
 ## 금지 사항
 
 - Gemini, LangGraph, FFmpeg 분석 로직을 Java에 복제하지 않는다.
@@ -65,6 +78,8 @@ src/main/java/com/swinganalyzer/
 ## 확정된 내부 연동
 
 - 내부 API 원본 계약은 `internal-api.openapi.yaml`이다.
+- 컨텍스트 코칭의 목표 schema와 상태 규칙은 `context-aware-coaching-contract.md`를 따른다.
+- OpenAPI 2.0.0과 공통 fixture는 2026-08-26에 동결했으며 Java 구현 task에서 수정하지 않는다.
 - 미디어는 Java가 발급한 짧은 수명의 signed read URL로 전달한다.
 - Java와 Python은 서버 전용 Bearer token으로 인증한다.
 - Java가 Python을 동기 호출하며 분석 상태와 최종 사용자 응답을 소유한다.

@@ -32,18 +32,54 @@
     "cannot_determine": ["실제 클럽 패스 수치"],
     "assessment_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   },
-  "coach_content": {
-    "evidence_mode": "video_ready",
-    "direct_answer": "다운스윙 중간에 손이 몸 뒤쪽에 남는 성분이 보입니다.",
-    "causal_chain": ["몸통 회전이 먼저 증가함", "손이 몸 앞 공간으로 내려올 시간이 줄어듦"],
-    "evidence_boundary": "후방 영상에서 확인되는 손과 허벅지의 상대 위치만 근거로 판단했습니다.",
-    "cannot_determine": ["실제 클럽 패스 수치"],
-    "observation_indexes": [0],
-    "base_assessment_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "single_change": "전환에서 손이 오른쪽 허벅지 앞 공간으로 내려올 시간을 먼저 확보하세요.",
-    "verification": "같은 후방 각도에서 손이 오른쪽 허벅지 앞쪽에 도달하는지 비교하세요.",
-    "preserve_candidate": null,
-    "preserve_topic": null,
-    "follow_up_information_needed": null
+  "coaching_turn_plan": {
+    "coach_content": {
+      "evidence_mode": "video_ready",
+      "direct_answer": "다운스윙 중간에 손이 몸 뒤쪽에 남는 성분이 보입니다.",
+      "causal_chain": ["몸통 회전이 먼저 증가함", "손이 몸 앞 공간으로 내려올 시간이 줄어듦"],
+      "evidence_boundary": "후방 영상에서 확인되는 손과 허벅지의 상대 위치만 근거로 판단했습니다.",
+      "cannot_determine": ["실제 클럽 패스 수치"],
+      "observation_indexes": [0],
+      "base_assessment_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "single_change": "전환에서 손이 오른쪽 허벅지 앞 공간으로 내려올 시간을 먼저 확보하세요.",
+      "verification": "같은 후방 각도에서 손이 오른쪽 허벅지 앞쪽에 도달하는지 비교하세요.",
+      "preserve_candidate": null,
+      "preserve_topic": null,
+      "follow_up_information_needed": null
+    },
+    "problem_reframe_candidate": {
+      "previous_problem": "다운스윙에서 팔이 뒤에 남는다",
+      "proposed_root_problem": "전환에서 팔이 내려올 공간이 부족하다",
+      "causal_explanation": "몸통 회전이 먼저 증가하면서 손이 몸 앞 공간으로 내려올 시간이 줄어든다.",
+      "evidence_references": [
+        {
+          "source_type": "OBSERVATION",
+          "source_id": "observation:0"
+        }
+      ]
+    },
+    "coaching_topic_candidate": {
+      "action": "REFRAME_CURRENT",
+      "target_topic_id": "66666666-6666-4666-8666-666666666666",
+      "expected_version": 2,
+      "scope": {
+        "shot_profile": "full_swing",
+        "club": "7-iron",
+        "club_group": "iron",
+        "short_game_type": null
+      },
+      "title": "전환에서 팔이 내려올 공간 확보"
+    },
+    "roadmap_update_candidates": [],
+    "progress_candidate": null,
+    "recognition_candidate": null,
+    "open_loop_candidate": {
+      "carry_forward_feel": "손이 오른쪽 허벅지 앞 공간으로 내려오는 느낌",
+      "next_single_change": "전환에서 손이 내려올 시간을 먼저 확보한다.",
+      "next_verification": "같은 후방 각도에서 손과 오른쪽 허벅지의 상대 위치를 비교한다.",
+      "completion_condition": "손이 오른쪽 허벅지 앞쪽에 도달하고 몸통 회전 선행이 줄어든다.",
+      "predicted_result": "임팩트 접근 공간이 넓어지고 당겨 치는 느낌이 줄어든다.",
+      "question": "다음 스윙은 언제 올릴 수 있어요?"
+    }
   }
 }

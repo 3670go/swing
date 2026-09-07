@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Swing Analyzer Internal AI API
-  version: 1.0.1
-  description: Contract between the Java Domain Application and Python AI Processing Unit.
+  version: 2.0.0
+  description: Frozen context-aware coaching contract between the Java Domain Application and Python AI Processing Unit.
 paths:
   /internal/health:
     get:
@@ -134,6 +134,345 @@ components:
         shot_result:
           type: [string, "null"]
           maxLength: 128
+    CoachingScope:
+      type: object
+      additionalProperties: false
+      required: [shot_profile, club, club_group, short_game_type]
+      properties:
+        shot_profile:
+          type: string
+          enum: [full_swing, short_game]
+        club:
+          type: [string, "null"]
+          maxLength: 64
+        club_group:
+          type: [string, "null"]
+          maxLength: 64
+        short_game_type:
+          type: [string, "null"]
+          maxLength: 64
+      anyOf:
+        - properties:
+            club:
+              type: string
+              minLength: 1
+              maxLength: 64
+        - properties:
+            club_group:
+              type: string
+              minLength: 1
+              maxLength: 64
+    RequestContext:
+      type: object
+      additionalProperties: false
+      required: [user_message, user_feel, selected_shot_context, media_presence]
+      properties:
+        user_message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        user_feel:
+          type: [string, "null"]
+          maxLength: 1000
+        selected_shot_context:
+          $ref: "#/components/schemas/ShotContext"
+        media_presence:
+          type: boolean
+    ActiveCoachingTopic:
+      type: object
+      additionalProperties: false
+      required:
+        - topic_id
+        - version
+        - user_problem
+        - root_problem
+        - scope
+        - active_hypothesis
+        - current_experiment
+        - carry_forward_feel
+      properties:
+        topic_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        user_problem:
+          type: string
+          minLength: 1
+          maxLength: 300
+        root_problem:
+          type: [string, "null"]
+          maxLength: 300
+        scope:
+          $ref: "#/components/schemas/CoachingScope"
+        active_hypothesis:
+          type: [string, "null"]
+          maxLength: 500
+        current_experiment:
+          type: [string, "null"]
+          maxLength: 500
+        carry_forward_feel:
+          type: [string, "null"]
+          maxLength: 300
+    RoadmapMilestoneSummary:
+      type: object
+      additionalProperties: false
+      required: [milestone_id, version, title, evidence_level, completion_condition]
+      properties:
+        milestone_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        evidence_level:
+          type: string
+          enum:
+            - NOT_STARTED
+            - USER_REPORTED_PROGRESS
+            - RESULT_REPEATED
+            - VIDEO_VERIFIED_PROGRESS
+            - MILESTONE_COMPLETED
+        completion_condition:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RoadmapContext:
+      type: object
+      additionalProperties: false
+      required:
+        - roadmap_id
+        - version
+        - target_swing
+        - current_milestone
+        - completed_milestones
+        - next_completion_condition
+      properties:
+        roadmap_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        target_swing:
+          type: string
+          minLength: 1
+          maxLength: 500
+        current_milestone:
+          anyOf:
+            - $ref: "#/components/schemas/RoadmapMilestoneSummary"
+            - type: "null"
+        completed_milestones:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/RoadmapMilestoneSummary"
+        next_completion_condition:
+          type: [string, "null"]
+          maxLength: 500
+    AnalysisEpisodeSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - episode_id
+        - observation_summary
+        - evidence_level
+        - captured_at
+        - scope
+      properties:
+        episode_id:
+          type: string
+          format: uuid
+        observation_summary:
+          type: string
+          minLength: 1
+          maxLength: 700
+        evidence_level:
+          type: string
+          enum: [TEXT_ONLY, USER_REPORTED, RESULT_REPEATED, VIDEO_OBSERVED]
+        captured_at:
+          type: string
+          format: date-time
+        scope:
+          $ref: "#/components/schemas/CoachingScope"
+    UserContextFact:
+      type: object
+      additionalProperties: false
+      required:
+        - fact_id
+        - version
+        - statement
+        - evidence_level
+        - scope
+        - source_episode_ids
+      properties:
+        fact_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        statement:
+          type: string
+          minLength: 1
+          maxLength: 500
+        evidence_level:
+          type: string
+          enum: [USER_REPORTED, RESULT_REPEATED, VIDEO_OBSERVED, REPEATED_OBSERVATION, GLOBAL_CANDIDATE]
+        scope:
+          $ref: "#/components/schemas/CoachingScope"
+        source_episode_ids:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    PendingOpenLoop:
+      type: object
+      additionalProperties: false
+      required:
+        - open_loop_id
+        - version
+        - state
+        - carry_forward_feel
+        - next_single_change
+        - next_verification
+        - predicted_result
+      properties:
+        open_loop_id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        state:
+          type: string
+          const: PENDING
+        carry_forward_feel:
+          type: [string, "null"]
+          maxLength: 300
+        next_single_change:
+          type: string
+          minLength: 1
+          maxLength: 500
+        next_verification:
+          type: string
+          minLength: 1
+          maxLength: 500
+        predicted_result:
+          type: [string, "null"]
+          maxLength: 500
+    ProgressEventSummary:
+      type: object
+      additionalProperties: false
+      required: [progress_event_id, topic_id, milestone_id, progress_level, user_signal]
+      properties:
+        progress_event_id:
+          type: string
+          format: uuid
+        topic_id:
+          type: string
+          format: uuid
+        milestone_id:
+          type: [string, "null"]
+          format: uuid
+        progress_level:
+          type: string
+          enum: [USER_REPORTED_PROGRESS, RESULT_REPEATED, VIDEO_VERIFIED_PROGRESS, MILESTONE_COMPLETED]
+        user_signal:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RecognizedTopicSummary:
+      type: object
+      additionalProperties: false
+      required: [topic_id, milestone_version, recognized_at]
+      properties:
+        topic_id:
+          type: string
+          format: uuid
+        milestone_version:
+          type: integer
+          minimum: 1
+        recognized_at:
+          type: string
+          format: date-time
+    RecognitionContext:
+      type: object
+      additionalProperties: false
+      required: [unrecognized_progress_events, recently_recognized_topics, last_roadmap_reveal_at]
+      properties:
+        unrecognized_progress_events:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/ProgressEventSummary"
+        recently_recognized_topics:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/RecognizedTopicSummary"
+        last_roadmap_reveal_at:
+          type: [string, "null"]
+          format: date-time
+    ContextPacket:
+      type: object
+      additionalProperties: false
+      required:
+        - context_snapshot_id
+        - context_snapshot_version
+        - request_context
+        - active_coaching_topic
+        - roadmap_context
+        - recent_dialogue
+        - relevant_analysis_episodes
+        - relevant_user_context_facts
+        - pending_open_loop
+        - recognition_context
+      properties:
+        context_snapshot_id:
+          type: string
+          format: uuid
+        context_snapshot_version:
+          type: integer
+          minimum: 1
+        request_context:
+          $ref: "#/components/schemas/RequestContext"
+        active_coaching_topic:
+          anyOf:
+            - $ref: "#/components/schemas/ActiveCoachingTopic"
+            - type: "null"
+        roadmap_context:
+          anyOf:
+            - $ref: "#/components/schemas/RoadmapContext"
+            - type: "null"
+        recent_dialogue:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/HistoryMessage"
+        relevant_analysis_episodes:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/AnalysisEpisodeSummary"
+        relevant_user_context_facts:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/UserContextFact"
+        pending_open_loop:
+          anyOf:
+            - $ref: "#/components/schemas/PendingOpenLoop"
+            - type: "null"
+        recognition_context:
+          $ref: "#/components/schemas/RecognitionContext"
     HistoryMessage:
       type: object
       additionalProperties: false
@@ -200,7 +539,7 @@ components:
     InternalAnalysisRequest:
       type: object
       additionalProperties: false
-      required: [request_id, analysis_run_id, media, shot_context, user_question, history]
+      required: [request_id, analysis_run_id, media, context_packet]
       properties:
         request_id:
           type: string
@@ -214,19 +553,8 @@ components:
           maxItems: 10
           items:
             $ref: "#/components/schemas/MediaReference"
-        shot_context:
-          $ref: "#/components/schemas/ShotContext"
-        user_question:
-          type: string
-          maxLength: 4000
-        user_feel:
-          type: [string, "null"]
-          maxLength: 1000
-        history:
-          type: array
-          maxItems: 20
-          items:
-            $ref: "#/components/schemas/HistoryMessage"
+        context_packet:
+          $ref: "#/components/schemas/ContextPacket"
     ObservationItem:
       type: object
       additionalProperties: false
@@ -379,10 +707,220 @@ components:
         follow_up_information_needed:
           type: [string, "null"]
           maxLength: 180
+    EvidenceReference:
+      type: object
+      additionalProperties: false
+      required: [source_type, source_id]
+      properties:
+        source_type:
+          type: string
+          enum: [MESSAGE, OBSERVATION, ANALYSIS_EPISODE, PROGRESS_EVENT, ROADMAP_MILESTONE]
+        source_id:
+          type: string
+          minLength: 1
+          maxLength: 80
+    ProblemReframeCandidate:
+      type: object
+      additionalProperties: false
+      required: [previous_problem, proposed_root_problem, causal_explanation, evidence_references]
+      properties:
+        previous_problem:
+          type: string
+          minLength: 1
+          maxLength: 300
+        proposed_root_problem:
+          type: string
+          minLength: 1
+          maxLength: 300
+        causal_explanation:
+          type: string
+          minLength: 1
+          maxLength: 700
+        evidence_references:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/EvidenceReference"
+    CoachingTopicCandidate:
+      type: object
+      additionalProperties: false
+      required: [action, target_topic_id, expected_version, scope, title]
+      properties:
+        action:
+          type: string
+          enum: [REFRAME_CURRENT, CREATE_NEW, ACTIVATE_EXISTING, RESOLVE_CURRENT]
+        target_topic_id:
+          type: [string, "null"]
+          format: uuid
+        expected_version:
+          type: [integer, "null"]
+          minimum: 1
+        scope:
+          $ref: "#/components/schemas/CoachingScope"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+    RoadmapUpdateCandidate:
+      type: object
+      additionalProperties: false
+      required:
+        - target_type
+        - target_id
+        - expected_version
+        - proposed_transition
+        - proposed_content
+        - evidence_references
+      properties:
+        target_type:
+          type: string
+          enum: [ROADMAP, MILESTONE]
+        target_id:
+          type: [string, "null"]
+          format: uuid
+        expected_version:
+          type: [integer, "null"]
+          minimum: 1
+        proposed_transition:
+          type: string
+          enum:
+            - CREATE
+            - UPDATE
+            - MARK_USER_REPORTED_PROGRESS
+            - MARK_RESULT_REPEATED
+            - MARK_VIDEO_VERIFIED_PROGRESS
+            - COMPLETE
+        proposed_content:
+          type: [string, "null"]
+          maxLength: 500
+        evidence_references:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/EvidenceReference"
+    ProgressCandidate:
+      type: object
+      additionalProperties: false
+      required:
+        - target_milestone_id
+        - expected_version
+        - progress_level
+        - user_signal
+        - evidence_references
+      properties:
+        target_milestone_id:
+          type: string
+          format: uuid
+        expected_version:
+          type: integer
+          minimum: 1
+        progress_level:
+          type: string
+          enum: [USER_REPORTED_PROGRESS, RESULT_REPEATED, VIDEO_VERIFIED_PROGRESS, MILESTONE_COMPLETED]
+        user_signal:
+          type: string
+          minLength: 1
+          maxLength: 500
+        evidence_references:
+          type: array
+          minItems: 1
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/EvidenceReference"
+    RecognitionCandidate:
+      type: object
+      additionalProperties: false
+      required: [target, proposed_intensity, recognition_content]
+      properties:
+        target:
+          type: string
+          minLength: 1
+          maxLength: 200
+        proposed_intensity:
+          type: string
+          enum: [ACKNOWLEDGEMENT, SPECIFIC_RECOGNITION, PROGRESS_DECLARATION, IDENTITY_CONNECTION]
+        recognition_content:
+          type: string
+          minLength: 1
+          maxLength: 500
+    OpenLoopCandidate:
+      type: object
+      additionalProperties: false
+      required:
+        - carry_forward_feel
+        - next_single_change
+        - next_verification
+        - completion_condition
+        - predicted_result
+        - question
+      properties:
+        carry_forward_feel:
+          type: [string, "null"]
+          maxLength: 300
+        next_single_change:
+          type: string
+          minLength: 1
+          maxLength: 500
+        next_verification:
+          type: string
+          minLength: 1
+          maxLength: 500
+        completion_condition:
+          type: string
+          minLength: 1
+          maxLength: 500
+        predicted_result:
+          type: [string, "null"]
+          maxLength: 500
+        question:
+          type: string
+          minLength: 1
+          maxLength: 300
+    CoachingTurnPlan:
+      type: object
+      additionalProperties: false
+      required:
+        - coach_content
+        - problem_reframe_candidate
+        - coaching_topic_candidate
+        - roadmap_update_candidates
+        - progress_candidate
+        - recognition_candidate
+        - open_loop_candidate
+      properties:
+        coach_content:
+          $ref: "#/components/schemas/CoachContent"
+        problem_reframe_candidate:
+          anyOf:
+            - $ref: "#/components/schemas/ProblemReframeCandidate"
+            - type: "null"
+        coaching_topic_candidate:
+          anyOf:
+            - $ref: "#/components/schemas/CoachingTopicCandidate"
+            - type: "null"
+        roadmap_update_candidates:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/RoadmapUpdateCandidate"
+        progress_candidate:
+          anyOf:
+            - $ref: "#/components/schemas/ProgressCandidate"
+            - type: "null"
+        recognition_candidate:
+          anyOf:
+            - $ref: "#/components/schemas/RecognitionCandidate"
+            - type: "null"
+        open_loop_candidate:
+          anyOf:
+            - $ref: "#/components/schemas/OpenLoopCandidate"
+            - type: "null"
     InternalAnalysisResponse:
       type: object
       additionalProperties: false
-      required: [request_id, analysis_run_id, status, observation, base_assessment, coach_content]
+      required: [request_id, analysis_run_id, status, observation, base_assessment, coaching_turn_plan]
       properties:
         request_id:
           type: string
@@ -399,41 +937,30 @@ components:
           anyOf:
             - $ref: "#/components/schemas/BaseAssessment"
             - type: "null"
-        coach_content:
+        coaching_turn_plan:
           anyOf:
-            - $ref: "#/components/schemas/CoachContent"
+            - $ref: "#/components/schemas/CoachingTurnPlan"
             - type: "null"
     InternalTextCoachingRequest:
       type: object
       additionalProperties: false
-      required: [request_id, message, shot_context, history, has_latest_analysis]
+      required: [request_id, context_packet]
       properties:
         request_id:
           type: string
           format: uuid
-        message:
-          type: string
-          minLength: 1
-          maxLength: 4000
-        shot_context:
-          $ref: "#/components/schemas/ShotContext"
-        history:
-          type: array
-          maxItems: 20
-          items:
-            $ref: "#/components/schemas/HistoryMessage"
-        has_latest_analysis:
-          type: boolean
+        context_packet:
+          $ref: "#/components/schemas/ContextPacket"
     InternalTextCoachingResponse:
       type: object
       additionalProperties: false
-      required: [request_id, coach_content]
+      required: [request_id, coaching_turn_plan]
       properties:
         request_id:
           type: string
           format: uuid
-        coach_content:
-          $ref: "#/components/schemas/CoachContent"
+        coaching_turn_plan:
+          $ref: "#/components/schemas/CoachingTurnPlan"
     ErrorResponse:
       type: object
       additionalProperties: false

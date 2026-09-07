@@ -11,17 +11,62 @@
       "read_url": "https://storage.example.test/signed/swing.mp4?token=fixture"
     }
   ],
-  "shot_context": {
-    "shot_profile": "full_swing",
-    "club": "7-iron",
-    "camera_view": "down_the_line",
-    "handedness": "right",
-    "analysis_goal": "posture_correction",
-    "short_game_type": null,
-    "video_type": null,
-    "shot_result": null
-  },
-  "user_question": "다운스윙에서 팔이 뒤에 남는지 봐줘",
-  "user_feel": "몸이 먼저 도는 느낌",
-  "history": []
+  "context_packet": {
+    "context_snapshot_id": "55555555-5555-4555-8555-555555555555",
+    "context_snapshot_version": 1,
+    "request_context": {
+      "user_message": "다운스윙에서 팔이 뒤에 남는지 봐줘",
+      "user_feel": "몸이 먼저 도는 느낌",
+      "selected_shot_context": {
+        "shot_profile": "full_swing",
+        "club": "7-iron",
+        "camera_view": "down_the_line",
+        "handedness": "right",
+        "analysis_goal": "posture_correction",
+        "short_game_type": null,
+        "video_type": null,
+        "shot_result": null
+      },
+      "media_presence": true
+    },
+    "active_coaching_topic": {
+      "topic_id": "66666666-6666-4666-8666-666666666666",
+      "version": 2,
+      "user_problem": "다운스윙에서 팔이 뒤에 남는다",
+      "root_problem": null,
+      "scope": {
+        "shot_profile": "full_swing",
+        "club": "7-iron",
+        "club_group": "iron",
+        "short_game_type": null
+      },
+      "active_hypothesis": "몸통 회전 선행 때문에 팔 하강 공간이 줄어드는지 확인한다.",
+      "current_experiment": "전환에서 손이 먼저 내려올 시간을 준다.",
+      "carry_forward_feel": "몸이 먼저 도는 느낌"
+    },
+    "roadmap_context": null,
+    "recent_dialogue": [
+      {
+        "role": "assistant",
+        "content": "다음 영상에서는 전환에서 손이 내려올 공간이 생기는지 먼저 보겠습니다.",
+        "interaction_meta": null
+      }
+    ],
+    "relevant_analysis_episodes": [],
+    "relevant_user_context_facts": [],
+    "pending_open_loop": {
+      "open_loop_id": "77777777-7777-4777-8777-777777777777",
+      "version": 1,
+      "state": "PENDING",
+      "carry_forward_feel": "몸이 먼저 도는 느낌",
+      "next_single_change": "전환에서 손이 내려올 시간을 먼저 준다.",
+      "next_verification": "후방 영상에서 손과 오른쪽 허벅지의 상대 위치를 확인한다.",
+      "predicted_result": "손이 몸 앞 공간으로 더 일찍 이동한다."
+    },
+    "recognition_context": {
+      "unrecognized_progress_events": [],
+      "recently_recognized_topics": [],
+      "last_roadmap_reveal_at": null
+    }
+  }
 }

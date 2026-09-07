@@ -1,16 +1,106 @@
 {
   "request_id": "44444444-4444-4444-8444-444444444444",
-  "message": "요즘 자꾸 당겨 치는 느낌이야",
-  "shot_context": {
-    "shot_profile": "full_swing",
-    "club": "driver",
-    "camera_view": "down_the_line",
-    "handedness": "right",
-    "analysis_goal": "shot_result",
-    "short_game_type": null,
-    "video_type": null,
-    "shot_result": "pull"
-  },
-  "history": [],
-  "has_latest_analysis": false
+  "context_packet": {
+    "context_snapshot_id": "88888888-8888-4888-8888-888888888888",
+    "context_snapshot_version": 4,
+    "request_context": {
+      "user_message": "지난번 말한 대로 해보니까 당기는 게 줄었고 세 번 연속 똑바로 갔어",
+      "user_feel": "손이 먼저 내려오고 나서 도는 느낌",
+      "selected_shot_context": {
+        "shot_profile": "full_swing",
+        "club": "driver",
+        "camera_view": "down_the_line",
+        "handedness": "right",
+        "analysis_goal": "shot_result",
+        "short_game_type": null,
+        "video_type": null,
+        "shot_result": "straight"
+      },
+      "media_presence": false
+    },
+    "active_coaching_topic": {
+      "topic_id": "99999999-9999-4999-8999-999999999999",
+      "version": 3,
+      "user_problem": "드라이버를 당겨 친다",
+      "root_problem": "전환에서 팔이 내려올 공간이 부족하다",
+      "scope": {
+        "shot_profile": "full_swing",
+        "club": "driver",
+        "club_group": "wood",
+        "short_game_type": null
+      },
+      "active_hypothesis": "몸통 회전 선행을 줄이면 팔이 내려올 공간이 확보된다.",
+      "current_experiment": "손이 먼저 내려온 뒤 회전을 늘린다.",
+      "carry_forward_feel": "손이 먼저 내려오고 나서 도는 느낌"
+    },
+    "roadmap_context": {
+      "roadmap_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "version": 2,
+      "target_swing": "드라이버가 왼쪽으로 급하게 당겨지지 않는 반복 가능한 스윙",
+      "current_milestone": {
+        "milestone_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "version": 2,
+        "title": "전환에서 팔 하강 공간 확보",
+        "evidence_level": "USER_REPORTED_PROGRESS",
+        "completion_condition": "같은 의도로 친 샷 결과가 반복되고 영상에서도 전환 공간 개선이 확인된다."
+      },
+      "completed_milestones": [],
+      "next_completion_condition": "샷 결과 반복 후 같은 후방 영상에서 전환 공간을 확인한다."
+    },
+    "recent_dialogue": [
+      {
+        "role": "assistant",
+        "content": "다음 연습에서는 손이 먼저 내려온 뒤 회전하는 느낌으로 세 번의 결과를 확인해보세요.",
+        "interaction_meta": {
+          "response_mode": "short",
+          "positive_topic": null,
+          "question_topic": "다음 연습 결과",
+          "invite_mode": "follow_up_experiment"
+        }
+      }
+    ],
+    "relevant_analysis_episodes": [
+      {
+        "episode_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "observation_summary": "후방 영상에서 몸통 회전에 비해 손이 오른쪽 허벅지 뒤쪽에 남았다.",
+        "evidence_level": "VIDEO_OBSERVED",
+        "captured_at": "2026-08-25T10:00:00+09:00",
+        "scope": {
+          "shot_profile": "full_swing",
+          "club": "driver",
+          "club_group": "wood",
+          "short_game_type": null
+        }
+      }
+    ],
+    "relevant_user_context_facts": [
+      {
+        "fact_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "version": 1,
+        "statement": "손이 먼저 내려온 뒤 회전하는 느낌에서 당김이 줄었다.",
+        "evidence_level": "USER_REPORTED",
+        "scope": {
+          "shot_profile": "full_swing",
+          "club": "driver",
+          "club_group": "wood",
+          "short_game_type": null
+        },
+        "source_episode_ids": []
+      }
+    ],
+    "pending_open_loop": {
+      "open_loop_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "version": 1,
+      "state": "PENDING",
+      "carry_forward_feel": "손이 먼저 내려온 뒤 회전하는 느낌",
+      "next_single_change": "같은 느낌을 유지한다.",
+      "next_verification": "세 번의 샷 결과가 반복되는지 확인한다.",
+      "predicted_result": "왼쪽으로 급하게 출발하는 샷이 줄어든다."
+    },
+    "recognition_context": {
+      "unrecognized_progress_events": [],
+      "recently_recognized_topics": [],
+      "last_roadmap_reveal_at": null
+    }
+  }
 }

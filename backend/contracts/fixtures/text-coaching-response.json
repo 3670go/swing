@@ -1,17 +1,61 @@
 {
   "request_id": "44444444-4444-4444-8444-444444444444",
-  "coach_content": {
-    "evidence_mode": "text_only",
-    "direct_answer": "당겨 치는 느낌은 몸통 회전 선행이나 실제 아웃-인 경로 등 여러 원인에서 생길 수 있습니다.",
-    "causal_chain": [],
-    "evidence_boundary": "영상이 없어 실제 동작과 클럽 패스는 확인하지 못했습니다.",
-    "cannot_determine": ["다운스윙 순서", "실제 클럽 패스"],
-    "observation_indexes": [],
-    "base_assessment_hash": null,
-    "single_change": null,
-    "verification": "후방 영상을 추가하면 몸통과 팔의 순서를 먼저 비교합니다.",
-    "preserve_candidate": null,
-    "preserve_topic": null,
-    "follow_up_information_needed": "당겨 맞은 공이 왼쪽으로 곧게 가는지 휘는지 알려주세요."
+  "coaching_turn_plan": {
+    "coach_content": {
+      "evidence_mode": "text_only",
+      "direct_answer": "세 번 연속 같은 결과가 났다면 지금 실험은 우연 한 번보다 의미가 큽니다.",
+      "causal_chain": ["손이 먼저 내려올 시간을 줌", "몸통 회전 선행이 줄어듦", "당겨지는 결과가 감소함"],
+      "evidence_boundary": "현재 발전은 사용자가 보고한 반복 결과이며 영상으로 확인된 변화는 아닙니다.",
+      "cannot_determine": ["영상에서 실제 전환 공간이 개선됐는지"],
+      "observation_indexes": [],
+      "base_assessment_hash": null,
+      "single_change": "다음에도 손이 먼저 내려온 뒤 회전하는 느낌만 유지하세요.",
+      "verification": "같은 후방 영상에서 손이 오른쪽 허벅지 앞 공간으로 내려오는지 확인합니다.",
+      "preserve_candidate": "손이 먼저 내려온 뒤 회전하는 느낌",
+      "preserve_topic": "전환 공간",
+      "follow_up_information_needed": null
+    },
+    "problem_reframe_candidate": null,
+    "coaching_topic_candidate": null,
+    "roadmap_update_candidates": [
+      {
+        "target_type": "MILESTONE",
+        "target_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "expected_version": 2,
+        "proposed_transition": "MARK_RESULT_REPEATED",
+        "proposed_content": "같은 감각으로 친 샷이 세 번 연속 똑바로 갔다.",
+        "evidence_references": [
+          {
+            "source_type": "MESSAGE",
+            "source_id": "current-user-message"
+          }
+        ]
+      }
+    ],
+    "progress_candidate": {
+      "target_milestone_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "expected_version": 2,
+      "progress_level": "RESULT_REPEATED",
+      "user_signal": "당기는 게 줄었고 세 번 연속 똑바로 갔다.",
+      "evidence_references": [
+        {
+          "source_type": "MESSAGE",
+          "source_id": "current-user-message"
+        }
+      ]
+    },
+    "recognition_candidate": {
+      "target": "전환에서 팔 하강 공간 확보 실험",
+      "proposed_intensity": "SPECIFIC_RECOGNITION",
+      "recognition_content": "같은 감각으로 결과를 세 번 반복했다는 점이 이번 변화의 핵심입니다."
+    },
+    "open_loop_candidate": {
+      "carry_forward_feel": "손이 먼저 내려온 뒤 회전하는 느낌",
+      "next_single_change": "현재 감각을 바꾸지 않고 유지한다.",
+      "next_verification": "같은 후방 영상에서 전환 공간 변화를 확인한다.",
+      "completion_condition": "영상에서도 손이 몸 앞 공간으로 내려오는 변화가 확인된다.",
+      "predicted_result": "당겨지는 샷이 줄어드는 결과가 계속 유지된다.",
+      "question": "다음 스윙 영상은 언제 올릴 수 있어요?"
+    }
   }
 }
