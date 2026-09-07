@@ -12,7 +12,6 @@ from app.adapters.ffmpeg_frame_extractor import FfmpegFrameExtractor
 from app.adapters.signed_url_media_reader import SignedUrlMediaReader
 from app.config import Settings, get_settings
 from app.internal_schemas import (
-    HistoryMessage,
     InternalAnalysisRequest,
     InternalAnalysisResponse,
     InternalErrorResponse,
@@ -23,7 +22,6 @@ from app.internal_schemas import (
 from app.llm import GeminiModelAdapter
 from app.ports.media_reader import RemoteMediaReference
 from app.services.internal_processing import (
-    ConversationHistoryItem,
     InternalAiProcessingService,
     InternalAnalysisCommand,
     InternalProcessingError,
@@ -85,19 +83,6 @@ def require_internal_bearer(
         )
 
 
-def _history(items: list[HistoryMessage]) -> tuple[ConversationHistoryItem, ...]:
-    return tuple(
-        ConversationHistoryItem(
-            role=item.role,
-            content=item.content,
-            interaction_meta=(
-                item.interaction_meta.model_dump(mode="json") if item.interaction_meta else None
-            ),
-        )
-        for item in items
-    )
-
-
 def _processing_status(code: str) -> int:
     return {
         "MEDIA_TYPE_UNSUPPORTED": status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -123,7 +108,7 @@ def _error_response(error: InternalApiError) -> JSONResponse:
 
 internal_app = FastAPI(
     title="Swing Analyzer Internal AI API",
-    version="1.0.1",
+    version="2.0.0",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
@@ -201,10 +186,7 @@ async def internal_analyze(
             )
             for media in request.media
         ),
-        context=request.shot_context,
-        user_question=request.user_question,
-        user_feel=request.user_feel,
-        history=_history(request.history),
+        context_packet=request.context_packet,
     )
     try:
         result = await service.analyze(command)
@@ -223,7 +205,7 @@ async def internal_analyze(
         status=result.status,
         observation=result.observation,
         base_assessment=result.base_assessment,
-        coach_content=result.coach_content,
+        coaching_turn_plan=result.coaching_turn_plan,
     )
 
 
@@ -238,13 +220,10 @@ async def internal_text_coaching(
 ) -> InternalTextCoachingResponse:
     command = InternalTextCoachingCommand(
         request_id=request.request_id,
-        message=request.message,
-        context=request.shot_context,
-        history=_history(request.history),
-        has_latest_analysis=request.has_latest_analysis,
+        context_packet=request.context_packet,
     )
     try:
-        content = await service.coach_text(command)
+        plan = await service.coach_text(command)
     except InternalProcessingError as error:
         raise InternalApiError(
             code=error.code,
@@ -253,4 +232,4 @@ async def internal_text_coaching(
             request_id=request.request_id,
             status_code=_processing_status(error.code),
         ) from error
-    return InternalTextCoachingResponse(request_id=request.request_id, coach_content=content)
+    return InternalTextCoachingResponse(request_id=request.request_id, coaching_turn_plan=plan)

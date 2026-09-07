@@ -1,12 +1,17 @@
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID
 
 from app.adapters.signed_url_media_reader import MediaReaderError
 from app.config import Settings
-from app.domain.models import BaseAssessment, CoachContent, ShotContext, VisionObservation
+from app.domain.models import (
+    BaseAssessment,
+    CoachingTurnPlan,
+    ContextPacket,
+    VisionObservation,
+)
 from app.graphs.runtime import (
     GraphContractError,
     build_analysis_content_graph,
@@ -19,28 +24,11 @@ from app.ports.media_reader import MediaReader, RemoteMediaReference
 
 
 @dataclass(frozen=True)
-class ConversationHistoryItem:
-    role: Literal["user", "assistant"]
-    content: str
-    interaction_meta: dict[str, Any] | None
-
-    def graph_value(self) -> dict[str, Any]:
-        return {
-            "role": self.role,
-            "content": self.content,
-            "interaction_meta": self.interaction_meta,
-        }
-
-
-@dataclass(frozen=True)
 class InternalAnalysisCommand:
     request_id: UUID
     analysis_run_id: UUID
     media: tuple[RemoteMediaReference, ...]
-    context: ShotContext
-    user_question: str
-    user_feel: str | None
-    history: tuple[ConversationHistoryItem, ...]
+    context_packet: ContextPacket
 
 
 @dataclass(frozen=True)
@@ -48,16 +36,13 @@ class InternalAnalysisResult:
     status: Literal["succeeded", "limited", "rejected"]
     observation: VisionObservation
     base_assessment: BaseAssessment | None
-    coach_content: CoachContent | None
+    coaching_turn_plan: CoachingTurnPlan | None
 
 
 @dataclass(frozen=True)
 class InternalTextCoachingCommand:
     request_id: UUID
-    message: str
-    context: ShotContext
-    history: tuple[ConversationHistoryItem, ...]
-    has_latest_analysis: bool
+    context_packet: ContextPacket
 
 
 class InternalProcessingError(RuntimeError):
@@ -111,7 +96,6 @@ class InternalAiProcessingService:
                             self._settings.analysis_frame_count,
                         )
                     )
-                question = self._coaching_question(command.user_question, command.user_feel)
                 result = await self._analysis_graph.ainvoke(
                     {
                         "frame_paths": frame_paths,
@@ -120,9 +104,7 @@ class InternalAiProcessingService:
                             if any(media.kind == "video" for media in downloaded)
                             else "photo"
                         ),
-                        "context": command.context,
-                        "question": question,
-                        "history": [item.graph_value() for item in command.history],
+                        "context_packet": command.context_packet,
                     }
                 )
             except MediaReaderError as error:
@@ -147,24 +129,21 @@ class InternalAiProcessingService:
                 status="rejected",
                 observation=result["observation"],
                 base_assessment=None,
-                coach_content=None,
+                coaching_turn_plan=None,
             )
         return InternalAnalysisResult(
             status=result["status"],
             observation=result["observation"],
             base_assessment=result["base_assessment"],
-            coach_content=result["content"],
+            coaching_turn_plan=result["coaching_turn_plan"],
         )
 
-    async def coach_text(self, command: InternalTextCoachingCommand) -> CoachContent:
+    async def coach_text(self, command: InternalTextCoachingCommand) -> CoachingTurnPlan:
         self._require_model()
         try:
             result = await self._text_graph.ainvoke(
                 {
-                    "message": command.message,
-                    "context": command.context,
-                    "history": [item.graph_value() for item in command.history],
-                    "latest_analysis": {} if command.has_latest_analysis else None,
+                    "context_packet": command.context_packet,
                 }
             )
         except GraphContractError as error:
@@ -175,7 +154,7 @@ class InternalAiProcessingService:
             ) from error
         except (ModelCallError, ModelNotConfiguredError) as error:
             raise self._model_error(error) from error
-        return result["content"]
+        return result["coaching_turn_plan"]
 
     def _require_model(self) -> None:
         if not self._model.is_configured:
@@ -184,16 +163,6 @@ class InternalAiProcessingService:
                 "AI model is not configured",
                 retryable=False,
             )
-
-    @staticmethod
-    def _coaching_question(user_question: str, user_feel: str | None) -> str:
-        question = user_question.strip()
-        feel = (user_feel or "").strip()
-        if not feel:
-            return question
-        if not question:
-            return f"사용자 체감: {feel}"
-        return f"{question}\n사용자 체감: {feel}"
 
     @staticmethod
     def _model_error(error: ModelCallError | ModelNotConfiguredError) -> InternalProcessingError:
@@ -209,6 +178,12 @@ class InternalAiProcessingService:
                 "ANALYSIS_CONTRACT_FAILED",
                 "AI model returned an invalid structured response",
                 retryable=False,
+            )
+        if code == "MODEL_TIMEOUT":
+            return InternalProcessingError(
+                "MODEL_TIMEOUT",
+                "AI model request timed out",
+                retryable=True,
             )
         return InternalProcessingError(
             "MODEL_UNAVAILABLE",

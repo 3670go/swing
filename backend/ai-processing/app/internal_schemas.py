@@ -1,9 +1,17 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.models import BaseAssessment, CoachContent, ShotContext, VisionObservation
+from app.domain.models import (
+    BaseAssessment,
+    CoachingTurnPlan,
+    ContextPacket,
+    HistoryMessage,
+    InteractionMeta,
+    ShotContext,
+    VisionObservation,
+)
 
 InternalErrorCode = Literal[
     "INTERNAL_AUTH_FAILED",
@@ -18,27 +26,11 @@ InternalErrorCode = Literal[
 ]
 
 
-class InteractionMeta(BaseModel):
-    response_mode: Literal["short", "standard", "deep"]
-    positive_topic: str | None = Field(default=None, max_length=80)
-    question_topic: str | None = Field(default=None, max_length=80)
-    invite_mode: Literal[
-        "none",
-        "compare_good_bad",
-        "locate_timing",
-        "recall_specific_shot",
-        "connect_body_feel",
-        "follow_up_experiment",
-    ]
+class StrictSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
-class HistoryMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=4000)
-    interaction_meta: InteractionMeta | None = None
-
-
-class MediaReference(BaseModel):
+class MediaReference(StrictSchema):
     media_id: UUID
     kind: Literal["photo", "video"]
     content_type: str = Field(min_length=1, max_length=128)
@@ -47,47 +39,71 @@ class MediaReference(BaseModel):
     read_url: AnyHttpUrl
 
 
-class InternalAnalysisRequest(BaseModel):
+class InternalAnalysisRequest(StrictSchema):
     request_id: UUID
     analysis_run_id: UUID
     media: list[MediaReference] = Field(min_length=1, max_length=10)
-    shot_context: ShotContext
-    user_question: str = Field(max_length=4000)
-    user_feel: str | None = Field(default=None, max_length=1000)
-    history: list[HistoryMessage] = Field(max_length=20)
+    context_packet: ContextPacket
+
+    @model_validator(mode="after")
+    def require_media_presence(self) -> "InternalAnalysisRequest":
+        if not self.context_packet.request_context.media_presence:
+            raise ValueError("Analysis request requires media_presence=true")
+        return self
 
 
-class InternalAnalysisResponse(BaseModel):
+class InternalAnalysisResponse(StrictSchema):
     request_id: UUID
     analysis_run_id: UUID
     status: Literal["succeeded", "limited", "rejected"]
     observation: VisionObservation
     base_assessment: BaseAssessment | None
-    coach_content: CoachContent | None
+    coaching_turn_plan: CoachingTurnPlan | None
 
 
-class InternalTextCoachingRequest(BaseModel):
+class InternalTextCoachingRequest(StrictSchema):
     request_id: UUID
-    message: str = Field(min_length=1, max_length=4000)
-    shot_context: ShotContext
-    history: list[HistoryMessage] = Field(max_length=20)
-    has_latest_analysis: bool
+    context_packet: ContextPacket
+
+    @model_validator(mode="after")
+    def reject_media_presence(self) -> "InternalTextCoachingRequest":
+        if self.context_packet.request_context.media_presence:
+            raise ValueError("Text coaching request requires media_presence=false")
+        return self
 
 
-class InternalTextCoachingResponse(BaseModel):
+class InternalTextCoachingResponse(StrictSchema):
     request_id: UUID
-    coach_content: CoachContent
+    coaching_turn_plan: CoachingTurnPlan
 
 
-class InternalHealthResponse(BaseModel):
+class InternalHealthResponse(StrictSchema):
     service: Literal["ai-processing"] = "ai-processing"
     status: Literal["ready", "degraded"]
     model_configured: bool
 
 
-class InternalErrorResponse(BaseModel):
+class InternalErrorResponse(StrictSchema):
     code: InternalErrorCode
     message: str = Field(min_length=1, max_length=300)
     retryable: bool
     request_id: UUID
     analysis_run_id: UUID | None = None
+
+
+__all__ = [
+    "BaseAssessment",
+    "CoachingTurnPlan",
+    "ContextPacket",
+    "HistoryMessage",
+    "InteractionMeta",
+    "InternalAnalysisRequest",
+    "InternalAnalysisResponse",
+    "InternalErrorResponse",
+    "InternalHealthResponse",
+    "InternalTextCoachingRequest",
+    "InternalTextCoachingResponse",
+    "MediaReference",
+    "ShotContext",
+    "VisionObservation",
+]

@@ -1,3 +1,4 @@
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -19,6 +20,10 @@ def load_fixture(name: str) -> dict:
     return json.loads((FIXTURE_ROOT / name).read_text(encoding="utf-8"))
 
 
+def authorization_header() -> dict[str, str]:
+    return {"Authorization": "Bearer internal-test-token"}
+
+
 def make_settings() -> Settings:
     return Settings(
         supabase_url="https://project.supabase.co",
@@ -36,14 +41,14 @@ class FakeInternalService:
             status=fixture.status,
             observation=fixture.observation,
             base_assessment=fixture.base_assessment,
-            coach_content=fixture.coach_content,
+            coaching_turn_plan=fixture.coaching_turn_plan,
         )
 
     async def coach_text(self, _command):
         fixture = InternalTextCoachingResponse.model_validate(
             load_fixture("text-coaching-response.json")
         )
-        return fixture.coach_content
+        return fixture.coaching_turn_plan
 
 
 class InternalApiTests(unittest.TestCase):
@@ -68,7 +73,7 @@ class InternalApiTests(unittest.TestCase):
         response = self.client.post(
             "/v1/analyses",
             json=load_fixture("analysis-request.json"),
-            headers={"Authorization": "Bearer internal-test-token"},
+            headers=authorization_header(),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -79,7 +84,7 @@ class InternalApiTests(unittest.TestCase):
         response = self.client.post(
             "/v1/coaching/text",
             json=load_fixture("text-coaching-request.json"),
-            headers={"Authorization": "Bearer internal-test-token"},
+            headers=authorization_header(),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -100,7 +105,128 @@ class InternalApiTests(unittest.TestCase):
         response = self.client.post(
             "/v1/coaching/text",
             json={},
-            headers={"Authorization": "Bearer internal-test-token"},
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_unexpected_interaction_meta_field(self) -> None:
+        payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
+        payload["context_packet"]["recent_dialogue"].append(
+            {
+                "role": "assistant",
+                "content": "좋아.",
+                "interaction_meta": {"unexpected": "accepted"},
+            }
+        )
+
+        response = self.client.post(
+            "/v1/coaching/text",
+            json=payload,
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_invalid_interaction_meta_response_mode(self) -> None:
+        payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
+        payload["context_packet"]["recent_dialogue"].append(
+            {
+                "role": "assistant",
+                "content": "좋아.",
+                "interaction_meta": {
+                    "response_mode": "verbose",
+                    "positive_topic": None,
+                    "question_topic": None,
+                    "invite_mode": "none",
+                },
+            }
+        )
+
+        response = self.client.post(
+            "/v1/coaching/text",
+            json=payload,
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_invalid_interaction_meta_invite_mode(self) -> None:
+        payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
+        payload["context_packet"]["recent_dialogue"].append(
+            {
+                "role": "assistant",
+                "content": "좋아.",
+                "interaction_meta": {
+                    "response_mode": "short",
+                    "positive_topic": None,
+                    "question_topic": None,
+                    "invite_mode": "bad_mode",
+                },
+            }
+        )
+
+        response = self.client.post(
+            "/v1/coaching/text",
+            json=payload,
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_duplicate_source_episode_ids(self) -> None:
+        payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
+        episode_id = "22222222-2222-4222-8222-222222222222"
+        payload["context_packet"]["relevant_user_context_facts"].append(
+            {
+                "fact_id": "11111111-1111-4111-8111-111111111111",
+                "version": 1,
+                "statement": "오른손잡이다.",
+                "evidence_level": "USER_REPORTED",
+                "scope": {
+                    "shot_profile": "full_swing",
+                    "club": "7번 아이언",
+                    "club_group": None,
+                    "short_game_type": None,
+                },
+                "source_episode_ids": [episode_id, episode_id],
+            }
+        )
+
+        response = self.client.post(
+            "/v1/coaching/text",
+            json=payload,
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_analysis_request_without_media_presence(self) -> None:
+        payload = copy.deepcopy(load_fixture("analysis-request.json"))
+        payload["context_packet"]["request_context"]["media_presence"] = False
+
+        response = self.client.post(
+            "/v1/analyses",
+            json=payload,
+            headers=authorization_header(),
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+
+    def test_rejects_text_request_with_media_presence(self) -> None:
+        payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
+        payload["context_packet"]["request_context"]["media_presence"] = True
+
+        response = self.client.post(
+            "/v1/coaching/text",
+            json=payload,
+            headers=authorization_header(),
         )
 
         self.assertEqual(response.status_code, 422)
