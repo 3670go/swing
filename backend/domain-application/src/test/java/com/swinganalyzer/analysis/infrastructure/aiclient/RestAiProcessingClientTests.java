@@ -21,8 +21,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import com.swinganalyzer.analysis.application.AiProcessingClientException;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.TextCoachingRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalTextCoachingRequest;
 
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
@@ -61,7 +61,7 @@ class RestAiProcessingClientTests {
 	void sendsSharedAnalysisFixtureAndReadsSharedResponse() throws Exception {
 		String requestJson = fixture("analysis-request.json");
 		String responseJson = fixture("analysis-response.json");
-		AnalysisRequest request = objectMapper.readValue(requestJson, AnalysisRequest.class);
+		InternalAnalysisRequest request = objectMapper.readValue(requestJson, InternalAnalysisRequest.class);
 		server.expect(requestTo("http://ai-processing.test/internal/v1/analyses"))
 				.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer internal-test-token"))
 				.andExpect(content().json(requestJson))
@@ -71,14 +71,15 @@ class RestAiProcessingClientTests {
 
 		assertEquals(request.analysisRunId(), response.analysisRunId());
 		assertEquals("succeeded", response.status());
-		assertEquals("video_ready", response.coachContent().evidenceMode());
+		assertEquals("video_ready", response.coachingTurnPlan().coachContent().evidenceMode());
 	}
 
 	@Test
 	void sendsSharedTextCoachingFixtureAndReadsSharedResponse() throws Exception {
 		String requestJson = fixture("text-coaching-request.json");
 		String responseJson = fixture("text-coaching-response.json");
-		TextCoachingRequest request = objectMapper.readValue(requestJson, TextCoachingRequest.class);
+		InternalTextCoachingRequest request = objectMapper.readValue(
+				requestJson, InternalTextCoachingRequest.class);
 		server.expect(requestTo("http://ai-processing.test/internal/v1/coaching/text"))
 				.andExpect(content().json(requestJson))
 				.andRespond(withSuccess(responseJson, MediaType.APPLICATION_JSON));
@@ -86,13 +87,13 @@ class RestAiProcessingClientTests {
 		var response = client.coachText(request);
 
 		assertEquals(request.requestId(), response.requestId());
-		assertEquals("text_only", response.coachContent().evidenceMode());
+		assertEquals("text_only", response.coachingTurnPlan().coachContent().evidenceMode());
 	}
 
 	@Test
 	void mapsStructuredPythonErrorWithoutRetrying() throws Exception {
 		String requestJson = fixture("analysis-request.json");
-		AnalysisRequest request = objectMapper.readValue(requestJson, AnalysisRequest.class);
+		InternalAnalysisRequest request = objectMapper.readValue(requestJson, InternalAnalysisRequest.class);
 		server.expect(requestTo("http://ai-processing.test/internal/v1/analyses"))
 				.andRespond(
 						withStatus(HttpStatus.UNPROCESSABLE_CONTENT)

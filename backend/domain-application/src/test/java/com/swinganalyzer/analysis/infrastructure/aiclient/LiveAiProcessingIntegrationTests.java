@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.swinganalyzer.analysis.application.AiProcessingClient;
 import com.swinganalyzer.analysis.application.AiProcessingClientException;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisRequest;
 
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,7 +37,7 @@ class LiveAiProcessingIntegrationTests {
 		var mapper = JsonMapper.builder()
 				.propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
 				.build();
-		AnalysisRequest request = mapper.readValue(fixture, AnalysisRequest.class);
+		InternalAnalysisRequest request = mapper.readValue(fixture, InternalAnalysisRequest.class);
 
 		AiProcessingClientException error = assertThrows(
 				AiProcessingClientException.class,

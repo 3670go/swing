@@ -9,12 +9,12 @@ import org.springframework.web.client.RestClientException;
 
 import com.swinganalyzer.analysis.application.AiProcessingClient;
 import com.swinganalyzer.analysis.application.AiProcessingClientException;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisResponse;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.ErrorResponse;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.HealthResponse;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.TextCoachingRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.TextCoachingResponse;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisResponse;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalTextCoachingRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalTextCoachingResponse;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -34,13 +34,13 @@ public final class RestAiProcessingClient implements AiProcessingClient {
 	}
 
 	@Override
-	public AnalysisResponse analyze(AnalysisRequest request) {
-		return post("/internal/v1/analyses", request, AnalysisResponse.class);
+	public InternalAnalysisResponse analyze(InternalAnalysisRequest request) {
+		return post("/internal/v1/analyses", request, InternalAnalysisResponse.class);
 	}
 
 	@Override
-	public TextCoachingResponse coachText(TextCoachingRequest request) {
-		return post("/internal/v1/coaching/text", request, TextCoachingResponse.class);
+	public InternalTextCoachingResponse coachText(InternalTextCoachingRequest request) {
+		return post("/internal/v1/coaching/text", request, InternalTextCoachingResponse.class);
 	}
 
 	private <T> T get(String path, Class<T> responseType) {

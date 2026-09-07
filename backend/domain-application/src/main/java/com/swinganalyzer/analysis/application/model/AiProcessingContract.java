@@ -4,10 +4,21 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Java transport records for the frozen internal AI API contract
+ * ({@code contracts/internal-api.openapi.yaml} version 2.0.0).
+ *
+ * <p>Field names map to the snake_case JSON contract through the SNAKE_CASE
+ * {@code ObjectMapper} configured for the internal HTTP client. These records
+ * define the wire shape only; product state application belongs to Java use
+ * cases, not to this contract.
+ */
 public final class AiProcessingContract {
 
 	private AiProcessingContract() {
 	}
+
+	// --- Shared value objects -------------------------------------------------
 
 	public record ShotContext(
 			String shotProfile,
@@ -18,6 +29,13 @@ public final class AiProcessingContract {
 			String shortGameType,
 			String videoType,
 			String shotResult) {
+	}
+
+	public record CoachingScope(
+			String shotProfile,
+			String club,
+			String clubGroup,
+			String shortGameType) {
 	}
 
 	public record InteractionMeta(
@@ -39,15 +57,107 @@ public final class AiProcessingContract {
 			URI readUrl) {
 	}
 
-	public record AnalysisRequest(
-			UUID requestId,
-			UUID analysisRunId,
-			List<MediaReference> media,
-			ShotContext shotContext,
-			String userQuestion,
-			String userFeel,
-			List<HistoryMessage> history) {
+	public record EvidenceReference(String sourceType, String sourceId) {
 	}
+
+	// --- Context Packet (Java -> Python input) --------------------------------
+
+	public record RequestContext(
+			String userMessage,
+			String userFeel,
+			ShotContext selectedShotContext,
+			boolean mediaPresence) {
+	}
+
+	public record ActiveCoachingTopic(
+			UUID topicId,
+			int version,
+			String userProblem,
+			String rootProblem,
+			CoachingScope scope,
+			String activeHypothesis,
+			String currentExperiment,
+			String carryForwardFeel) {
+	}
+
+	public record RoadmapMilestoneSummary(
+			UUID milestoneId,
+			int version,
+			String title,
+			String evidenceLevel,
+			String completionCondition) {
+	}
+
+	public record RoadmapContext(
+			UUID roadmapId,
+			int version,
+			String targetSwing,
+			RoadmapMilestoneSummary currentMilestone,
+			List<RoadmapMilestoneSummary> completedMilestones,
+			String nextCompletionCondition) {
+	}
+
+	public record AnalysisEpisodeSummary(
+			UUID episodeId,
+			String observationSummary,
+			String evidenceLevel,
+			String capturedAt,
+			CoachingScope scope) {
+	}
+
+	public record UserContextFact(
+			UUID factId,
+			int version,
+			String statement,
+			String evidenceLevel,
+			CoachingScope scope,
+			List<UUID> sourceEpisodeIds) {
+	}
+
+	public record PendingOpenLoop(
+			UUID openLoopId,
+			int version,
+			String state,
+			String carryForwardFeel,
+			String nextSingleChange,
+			String nextVerification,
+			String predictedResult) {
+	}
+
+	public record ProgressEventSummary(
+			UUID progressEventId,
+			UUID topicId,
+			UUID milestoneId,
+			String progressLevel,
+			String userSignal) {
+	}
+
+	public record RecognizedTopicSummary(
+			UUID topicId,
+			int milestoneVersion,
+			String recognizedAt) {
+	}
+
+	public record RecognitionContext(
+			List<ProgressEventSummary> unrecognizedProgressEvents,
+			List<RecognizedTopicSummary> recentlyRecognizedTopics,
+			String lastRoadmapRevealAt) {
+	}
+
+	public record ContextPacket(
+			UUID contextSnapshotId,
+			int contextSnapshotVersion,
+			RequestContext requestContext,
+			ActiveCoachingTopic activeCoachingTopic,
+			RoadmapContext roadmapContext,
+			List<HistoryMessage> recentDialogue,
+			List<AnalysisEpisodeSummary> relevantAnalysisEpisodes,
+			List<UserContextFact> relevantUserContextFacts,
+			PendingOpenLoop pendingOpenLoop,
+			RecognitionContext recognitionContext) {
+	}
+
+	// --- Analysis observation / assessment ------------------------------------
 
 	public record ObservationItem(
 			String timestamp,
@@ -81,6 +191,8 @@ public final class AiProcessingContract {
 			String assessmentHash) {
 	}
 
+	// --- Coaching Turn Plan (Python -> Java output) ---------------------------
+
 	public record CoachContent(
 			String evidenceMode,
 			String directAnswer,
@@ -96,24 +208,89 @@ public final class AiProcessingContract {
 			String followUpInformationNeeded) {
 	}
 
-	public record AnalysisResponse(
+	public record ProblemReframeCandidate(
+			String previousProblem,
+			String proposedRootProblem,
+			String causalExplanation,
+			List<EvidenceReference> evidenceReferences) {
+	}
+
+	public record CoachingTopicCandidate(
+			String action,
+			UUID targetTopicId,
+			Integer expectedVersion,
+			CoachingScope scope,
+			String title) {
+	}
+
+	public record RoadmapUpdateCandidate(
+			String targetType,
+			UUID targetId,
+			Integer expectedVersion,
+			String proposedTransition,
+			String proposedContent,
+			List<EvidenceReference> evidenceReferences) {
+	}
+
+	public record ProgressCandidate(
+			UUID targetMilestoneId,
+			int expectedVersion,
+			String progressLevel,
+			String userSignal,
+			List<EvidenceReference> evidenceReferences) {
+	}
+
+	public record RecognitionCandidate(
+			String target,
+			String proposedIntensity,
+			String recognitionContent) {
+	}
+
+	public record OpenLoopCandidate(
+			String carryForwardFeel,
+			String nextSingleChange,
+			String nextVerification,
+			String completionCondition,
+			String predictedResult,
+			String question) {
+	}
+
+	public record CoachingTurnPlan(
+			CoachContent coachContent,
+			ProblemReframeCandidate problemReframeCandidate,
+			CoachingTopicCandidate coachingTopicCandidate,
+			List<RoadmapUpdateCandidate> roadmapUpdateCandidates,
+			ProgressCandidate progressCandidate,
+			RecognitionCandidate recognitionCandidate,
+			OpenLoopCandidate openLoopCandidate) {
+	}
+
+	// --- Internal API request/response envelopes ------------------------------
+
+	public record InternalAnalysisRequest(
+			UUID requestId,
+			UUID analysisRunId,
+			List<MediaReference> media,
+			ContextPacket contextPacket) {
+	}
+
+	public record InternalAnalysisResponse(
 			UUID requestId,
 			UUID analysisRunId,
 			String status,
 			VisionObservation observation,
 			BaseAssessment baseAssessment,
-			CoachContent coachContent) {
+			CoachingTurnPlan coachingTurnPlan) {
 	}
 
-	public record TextCoachingRequest(
+	public record InternalTextCoachingRequest(
 			UUID requestId,
-			String message,
-			ShotContext shotContext,
-			List<HistoryMessage> history,
-			boolean hasLatestAnalysis) {
+			ContextPacket contextPacket) {
 	}
 
-	public record TextCoachingResponse(UUID requestId, CoachContent coachContent) {
+	public record InternalTextCoachingResponse(
+			UUID requestId,
+			CoachingTurnPlan coachingTurnPlan) {
 	}
 
 	public record HealthResponse(String service, String status, boolean modelConfigured) {

@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
 
 import com.swinganalyzer.analysis.application.AiProcessingClient;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisResponse;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.HealthResponse;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.TextCoachingRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.TextCoachingResponse;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisResponse;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalTextCoachingRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalTextCoachingResponse;
 
 class AiProcessingHealthIndicatorTests {
 
@@ -32,12 +32,12 @@ class AiProcessingHealthIndicatorTests {
 		}
 
 		@Override
-		public AnalysisResponse analyze(AnalysisRequest request) {
+		public InternalAnalysisResponse analyze(InternalAnalysisRequest request) {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public TextCoachingResponse coachText(TextCoachingRequest request) {
+		public InternalTextCoachingResponse coachText(InternalTextCoachingRequest request) {
 			throw new UnsupportedOperationException();
 		}
 	}
