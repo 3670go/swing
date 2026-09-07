@@ -15,13 +15,19 @@ import org.springframework.web.multipart.MultipartFile;
 import com.swinganalyzer.analysis.application.AnalysisStore.StartedAnalysis;
 import com.swinganalyzer.analysis.application.AnalysisStore.DeletionTarget;
 import com.swinganalyzer.analysis.application.AnalysisStore.HistoryEntry;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisRequest;
-import com.swinganalyzer.analysis.application.model.AiProcessingContract.AnalysisResponse;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.BaseAssessment;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.CoachContent;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.ContextPacket;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisRequest;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.InternalAnalysisResponse;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.MediaReference;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.ShotContext;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.VisionObservation;
+import com.swinganalyzer.conversation.application.CoachingPlanApplicationService;
+import com.swinganalyzer.conversation.application.ContextPacketAssembler;
+import com.swinganalyzer.conversation.application.ContextRetrievalService;
+import com.swinganalyzer.conversation.application.ContextSelection;
+import com.swinganalyzer.conversation.application.ContextSnapshotStore;
 import com.swinganalyzer.conversation.application.ConversationRenderer;
 import com.swinganalyzer.conversation.application.ConversationRenderer.RenderedConversation;
 import com.swinganalyzer.conversation.application.ConversationStore;
@@ -46,6 +52,10 @@ public class AnalysisApplicationService {
 	private final MediaStorage mediaStorage;
 	private final ObjectProvider<AiProcessingClient> aiClientProvider;
 	private final ConversationRenderer renderer;
+	private final ContextRetrievalService contextRetrieval;
+	private final ContextPacketAssembler contextPacketAssembler;
+	private final ContextSnapshotStore contextSnapshotStore;
+	private final CoachingPlanApplicationService coachingPlanApplication;
 	private final ObjectMapper objectMapper;
 
 	public AnalysisApplicationService(
@@ -55,6 +65,10 @@ public class AnalysisApplicationService {
 			MediaStorage mediaStorage,
 			ObjectProvider<AiProcessingClient> aiClientProvider,
 			ConversationRenderer renderer,
+			ContextRetrievalService contextRetrieval,
+			ContextPacketAssembler contextPacketAssembler,
+			ContextSnapshotStore contextSnapshotStore,
+			CoachingPlanApplicationService coachingPlanApplication,
 			ObjectMapper objectMapper) {
 		this.store = store;
 		this.conversationStore = conversationStore;
@@ -62,6 +76,10 @@ public class AnalysisApplicationService {
 		this.mediaStorage = mediaStorage;
 		this.aiClientProvider = aiClientProvider;
 		this.renderer = renderer;
+		this.contextRetrieval = contextRetrieval;
+		this.contextPacketAssembler = contextPacketAssembler;
+		this.contextSnapshotStore = contextSnapshotStore;
+		this.coachingPlanApplication = coachingPlanApplication;
 		this.objectMapper = objectMapper;
 	}
 
@@ -86,19 +104,31 @@ public class AnalysisApplicationService {
 			try {
 				List<MediaReference> references = uploadAndReference(bundle.media(), started, uploadedPaths);
 				UUID requestId = UUID.randomUUID();
-				AnalysisResponse response = aiClient.analyze(new AnalysisRequest(
+				UUID snapshotId = UUID.randomUUID();
+				ContextSelection selection = contextRetrieval.retrieve(
+						started.ownerId(), started.conversationId(), context, question);
+				ContextPacket contextPacket = contextPacketAssembler.assemble(
+						snapshotId, question, context, true, selection);
+				InternalAnalysisResponse response = aiClient.analyze(new InternalAnalysisRequest(
 						requestId,
 						started.runId(),
 						references,
-						context,
-						question,
-						null,
-						conversationStore.recentHistory(started.conversationId(), 20)));
+						contextPacket));
 				if (!requestId.equals(response.requestId())
 						|| !started.runId().equals(response.analysisRunId())) {
 					throw new PublicApiException(HttpStatus.BAD_GATEWAY, "INTERNAL_RESPONSE_ID_MISMATCH");
 				}
-				return finish(started, response);
+				// Consume coach_content, snapshot the used packet, then apply the plan
+				// candidates to Java-owned product state (Session 3). The public
+				// response keeps its existing shape.
+				AnalysisResult result = finish(started, response);
+				contextSnapshotStore.save(
+						snapshotId, requestId, started.ownerId(), started.conversationId(),
+						started.runId(), selection, contextPacket);
+				coachingPlanApplication.apply(new CoachingPlanApplicationService.ApplicationCommand(
+						requestId, started.ownerId(), started.conversationId(), started.runId(),
+						snapshotId, selection, response.coachingTurnPlan(), observationCount(response)));
+				return result;
 			} catch (AiProcessingClientException error) {
 				store.fail(started.runId(), error.code());
 				throw new PublicApiException(mapStatus(error), error.code());
@@ -172,15 +202,21 @@ public class AnalysisApplicationService {
 		return references;
 	}
 
-	private AnalysisResult finish(StartedAnalysis started, AnalysisResponse response) {
-		RenderedConversation rendered = response.coachContent() == null
+	private AnalysisResult finish(StartedAnalysis started, InternalAnalysisResponse response) {
+		// Session 1: only coach_content is consumed. The Coaching Turn Plan state
+		// candidates are intentionally ignored here; DB-backed application is
+		// Session 2 scope. A rejected analysis carries a null turn plan.
+		CoachContent coachContent = response.coachingTurnPlan() == null
 				? null
-				: renderer.render(response.coachContent());
-		AnalysisReply reply = response.baseAssessment() == null || response.coachContent() == null
+				: response.coachingTurnPlan().coachContent();
+		RenderedConversation rendered = coachContent == null
+				? null
+				: renderer.render(coachContent);
+		AnalysisReply reply = response.baseAssessment() == null || coachContent == null
 				? null
 				: new AnalysisReply(
 						response.baseAssessment(),
-						response.coachContent(),
+						coachContent,
 						toConversationResponse(rendered));
 		store.complete(
 				started.runId(),
@@ -232,6 +268,13 @@ public class AnalysisApplicationService {
 				entry.swingSession().club(),
 				entry.swingSession().cameraView(),
 				entry.run().createdAt().toString());
+	}
+
+	private static int observationCount(InternalAnalysisResponse response) {
+		if (response.observation() == null || response.observation().observations() == null) {
+			return 0;
+		}
+		return response.observation().observations().size();
 	}
 
 	private static PublicApiException mapStorageError(MediaStorageException error) {
