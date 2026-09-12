@@ -15,14 +15,20 @@ public class ConversationRenderer {
 	public RenderedConversation render(CoachContent content) {
 		List<String> messageParts = new ArrayList<>();
 		messageParts.add(content.directAnswer().strip());
-		if (!content.causalChain().isEmpty()) {
-			messageParts.add(String.join(" → ", content.causalChain()));
-		}
-		if (content.singleChange() != null) {
-			messageParts.add(content.singleChange().strip());
-		}
-		if (content.verification() != null) {
-			messageParts.add(content.verification().strip());
+		if ("text_only".equals(content.evidenceMode())) {
+			if (content.singleChange() != null) {
+				messageParts.add(content.singleChange().strip());
+			}
+		} else {
+			if (!content.causalChain().isEmpty()) {
+				messageParts.add(String.join(" → ", content.causalChain()));
+			}
+			if (content.singleChange() != null) {
+				messageParts.add(content.singleChange().strip());
+			}
+			if (content.verification() != null) {
+				messageParts.add(content.verification().strip());
+			}
 		}
 
 		String positiveFeedback = trimToNull(content.preserveCandidate());
@@ -52,12 +58,7 @@ public class ConversationRenderer {
 	}
 
 	private static String followUpQuestion(String informationNeeded) {
-		String value = trimToNull(informationNeeded);
-		if (value == null) {
-			return null;
-		}
-		String withoutPeriod = value.endsWith(".") ? value.substring(0, value.length() - 1) : value;
-		return withoutPeriod + "도 알려줄래요?";
+		return trimToNull(informationNeeded);
 	}
 
 	private static String trimToNull(String value) {

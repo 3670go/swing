@@ -17,6 +17,7 @@
     },
     "problem_reframe_candidate": null,
     "coaching_topic_candidate": null,
+    "user_context_fact_candidates": [],
     "roadmap_update_candidates": [
       {
         "target_type": "MILESTONE",

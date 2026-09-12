@@ -65,6 +65,7 @@ def selected_shot_context_only(packet: ContextPacket) -> dict[str, str]:
 
 def _validate_candidate_limits(plan: CoachingTurnPlan) -> None:
     count = len(plan.roadmap_update_candidates)
+    count += len(plan.user_context_fact_candidates)
     count += int(plan.problem_reframe_candidate is not None)
     count += int(plan.coaching_topic_candidate is not None)
     count += int(plan.progress_candidate is not None)

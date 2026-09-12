@@ -4,7 +4,7 @@
 >
 > 이 문서는 회원 컨텍스트, 코칭 주제, 개인 로드맵, Progress Moment와 Open Loop를 사용하는
 > Java 채팅 엔진과 Python LangGraph의 제품·책임·상태 계약이다. 내부 HTTP schema의
-> 기계 판독 원본은 `internal-api.openapi.yaml` 2.0.0과 `fixtures/`이며 2026-08-26에 동결했다.
+> 기계 판독 원본은 `internal-api.openapi.yaml` 2.2.0과 `fixtures/`이며 2026-09-11에 확정했다.
 > Java와 Python 구현은 이 계약을 변경하지 않고 각각 맞춘다.
 
 ## 1. 목표
@@ -384,6 +384,9 @@ MILESTONE_COMPLETED
 - 값과 출처
 - 사용자 명시, 영상 관찰, 모델 가설 구분
 - 유효 시점과 대체된 시점
+- 사용자 명시 정보 유형: `BODY_TRAIT`, `INJURY`, `CURRENT_SWING_STYLE`, `TARGET_SWING_STYLE`
+- 부상 정보는 마지막 명시 시점부터 90일 후 만료하며, 재언급하면 90일을 다시 계산한다.
+- 만료된 부상 정보는 컨텍스트 조립 전에 Java가 hard delete한다.
 
 ### CoachingTopic
 
@@ -618,6 +621,13 @@ coaching_topic_candidate
   action
   scope
   title
+
+user_context_fact_candidates
+  action
+  fact_type
+  body_region
+  statement
+  scope
 
 roadmap_update_candidates
   target_or_milestone

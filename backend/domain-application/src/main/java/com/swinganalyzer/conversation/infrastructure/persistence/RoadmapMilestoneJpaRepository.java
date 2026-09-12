@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RoadmapMilestoneJpaRepository extends JpaRepository<RoadmapMilestoneEntity, UUID> {
 
+	List<RoadmapMilestoneEntity> findByRoadmapIdOrderBySortOrderAsc(UUID roadmapId);
+
 	List<RoadmapMilestoneEntity> findByRoadmapIdAndEvidenceLevelOrderBySortOrderAsc(
 			UUID roadmapId, String evidenceLevel, Pageable pageable);
 }

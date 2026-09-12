@@ -89,6 +89,17 @@ public class AnalysisApplicationService {
 			UUID conversationId,
 			ShotContext context,
 			String question) {
+		return analyze(
+				files, conversationStore.getOrCreateOwner(anonymousSessionId).id(), conversationId,
+				context, question);
+	}
+
+	public AnalysisResult analyze(
+			List<MultipartFile> files,
+			UUID ownerContextId,
+			UUID conversationId,
+			ShotContext context,
+			String question) {
 		AiProcessingClient aiClient = aiClientProvider.getIfAvailable();
 		if (aiClient == null) {
 			throw new PublicApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_PROCESSING_NOT_CONFIGURED");
@@ -99,7 +110,7 @@ public class AnalysisApplicationService {
 					? "photo"
 					: "video";
 			StartedAnalysis started = store.start(
-					anonymousSessionId, conversationId, context, question, mediaKind, null);
+					ownerContextId, conversationId, context, question, mediaKind, null);
 			List<String> uploadedPaths = new ArrayList<>();
 			try {
 				List<MediaReference> references = uploadAndReference(bundle.media(), started, uploadedPaths);
@@ -127,7 +138,8 @@ public class AnalysisApplicationService {
 						started.runId(), selection, contextPacket);
 				coachingPlanApplication.apply(new CoachingPlanApplicationService.ApplicationCommand(
 						requestId, started.ownerId(), started.conversationId(), started.runId(),
-						snapshotId, selection, response.coachingTurnPlan(), observationCount(response)));
+						snapshotId, started.userMessageId(), selection, response.coachingTurnPlan(),
+						observationCount(response)));
 				return result;
 			} catch (AiProcessingClientException error) {
 				store.fail(started.runId(), error.code());
@@ -151,7 +163,11 @@ public class AnalysisApplicationService {
 		if (owner == null) {
 			return List.of();
 		}
-		return store.history(owner.id()).stream()
+		return history(owner.id());
+	}
+
+	public List<HistoryItem> history(UUID ownerContextId) {
+		return store.history(ownerContextId).stream()
 				.map(AnalysisApplicationService::toHistoryItem)
 				.toList();
 	}
@@ -161,7 +177,11 @@ public class AnalysisApplicationService {
 		if (owner == null) {
 			throw new PublicApiException(HttpStatus.NOT_FOUND, "ANALYSIS_NOT_FOUND");
 		}
-		DeletionTarget target = store.deletionTarget(owner.id(), runId);
+		delete(owner.id(), runId);
+	}
+
+	public void delete(UUID ownerContextId, UUID runId) {
+		DeletionTarget target = store.deletionTarget(ownerContextId, runId);
 		if (target == null) {
 			throw new PublicApiException(HttpStatus.NOT_FOUND, "ANALYSIS_NOT_FOUND");
 		}
@@ -292,7 +312,8 @@ public class AnalysisApplicationService {
 			case "MODEL_RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
 			case "MODEL_TIMEOUT" -> HttpStatus.GATEWAY_TIMEOUT;
 			case "MEDIA_TYPE_UNSUPPORTED", "MEDIA_UNAVAILABLE", "MEDIA_DECODE_FAILED",
-					"ANALYSIS_CONTRACT_FAILED" -> HttpStatus.valueOf(422);
+					"REQUEST_CONTRACT_INVALID", "ANALYSIS_CONTRACT_FAILED", "COACHING_GUARD_REJECTED" ->
+							HttpStatus.valueOf(422);
 			default -> HttpStatus.BAD_GATEWAY;
 		};
 	}

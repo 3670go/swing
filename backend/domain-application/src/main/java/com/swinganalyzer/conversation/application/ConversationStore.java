@@ -48,11 +48,21 @@ public class ConversationStore {
 			UUID requestedConversationId,
 			String message,
 			ShotContext context) {
-		OwnerContextEntity owner = getOrCreateOwner(anonymousSessionId);
-		ConversationEntity conversation = getOrCreateConversation(owner.id(), requestedConversationId);
+		return prepareTextTurn(
+				getOrCreateOwner(anonymousSessionId).id(), requestedConversationId, message, context);
+	}
+
+	@Transactional
+	public PreparedConversation prepareTextTurn(
+			UUID ownerContextId,
+			UUID requestedConversationId,
+			String message,
+			ShotContext context) {
+		ConversationEntity conversation = getOrCreateConversation(ownerContextId, requestedConversationId);
 		conversation.updateContext(context.shotProfile(), context.club(), context.analysisGoal());
-		messages.save(new ChatMessageEntity(conversation.id(), null, "user", message, null));
-		return new PreparedConversation(conversation.id(), owner.id());
+		ChatMessageEntity userMessage = messages.save(
+				new ChatMessageEntity(conversation.id(), null, "user", message, null));
+		return new PreparedConversation(conversation.id(), ownerContextId, userMessage.id());
 	}
 
 	@Transactional
@@ -104,6 +114,6 @@ public class ConversationStore {
 		}
 	}
 
-	public record PreparedConversation(UUID conversationId, UUID ownerContextId) {
+	public record PreparedConversation(UUID conversationId, UUID ownerContextId, UUID userMessageId) {
 	}
 }

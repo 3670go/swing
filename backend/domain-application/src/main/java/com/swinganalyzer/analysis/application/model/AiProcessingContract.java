@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Java transport records for the frozen internal AI API contract
- * ({@code contracts/internal-api.openapi.yaml} version 2.0.0).
+ * ({@code contracts/internal-api.openapi.yaml} version 2.2.0).
  *
  * <p>Field names map to the snake_case JSON contract through the SNAKE_CASE
  * {@code ObjectMapper} configured for the internal HTTP client. These records
@@ -111,7 +111,20 @@ public final class AiProcessingContract {
 			String statement,
 			String evidenceLevel,
 			CoachingScope scope,
-			List<UUID> sourceEpisodeIds) {
+			List<UUID> sourceEpisodeIds,
+			String factType,
+			String bodyRegion,
+			String expiresAt) {
+
+		public UserContextFact(
+				UUID factId,
+				int version,
+				String statement,
+				String evidenceLevel,
+				CoachingScope scope,
+				List<UUID> sourceEpisodeIds) {
+			this(factId, version, statement, evidenceLevel, scope, sourceEpisodeIds, null, null, null);
+		}
 	}
 
 	public record PendingOpenLoop(
@@ -223,6 +236,14 @@ public final class AiProcessingContract {
 			String title) {
 	}
 
+	public record UserContextFactCandidate(
+			String action,
+			String factType,
+			String bodyRegion,
+			String statement,
+			CoachingScope scope) {
+	}
+
 	public record RoadmapUpdateCandidate(
 			String targetType,
 			UUID targetId,
@@ -259,10 +280,30 @@ public final class AiProcessingContract {
 			CoachContent coachContent,
 			ProblemReframeCandidate problemReframeCandidate,
 			CoachingTopicCandidate coachingTopicCandidate,
+			List<UserContextFactCandidate> userContextFactCandidates,
 			List<RoadmapUpdateCandidate> roadmapUpdateCandidates,
 			ProgressCandidate progressCandidate,
 			RecognitionCandidate recognitionCandidate,
 			OpenLoopCandidate openLoopCandidate) {
+
+		public CoachingTurnPlan(
+				CoachContent coachContent,
+				ProblemReframeCandidate problemReframeCandidate,
+				CoachingTopicCandidate coachingTopicCandidate,
+				List<RoadmapUpdateCandidate> roadmapUpdateCandidates,
+				ProgressCandidate progressCandidate,
+				RecognitionCandidate recognitionCandidate,
+				OpenLoopCandidate openLoopCandidate) {
+			this(
+					coachContent,
+					problemReframeCandidate,
+					coachingTopicCandidate,
+					List.of(),
+					roadmapUpdateCandidates,
+					progressCandidate,
+					recognitionCandidate,
+					openLoopCandidate);
+		}
 	}
 
 	// --- Internal API request/response envelopes ------------------------------

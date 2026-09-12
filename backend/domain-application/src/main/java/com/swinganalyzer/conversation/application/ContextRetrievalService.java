@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -93,7 +94,7 @@ public class ContextRetrievalService {
 		this.openLoops = openLoops;
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public ContextSelection retrieve(
 			UUID ownerContextId,
 			UUID conversationId,
@@ -128,8 +129,22 @@ public class ContextRetrievalService {
 					.toList();
 		}
 
-		List<Fact> selectedFacts = facts
+		List<UserContextFactEntity> activeFacts = facts
 				.findByOwnerContextIdAndSupersededAtIsNullOrderByValidFromDesc(ownerContextId)
+				.stream()
+				.toList();
+		List<UserContextFactEntity> expiredInjuries = activeFacts.stream()
+				.filter(fact -> "INJURY".equals(fact.factType()))
+				.filter(fact -> fact.expiresAt() != null && !fact.expiresAt().isAfter(Instant.now()))
+				.toList();
+		if (!expiredInjuries.isEmpty()) {
+			facts.deleteAll(expiredInjuries);
+			activeFacts = activeFacts.stream()
+					.filter(fact -> !expiredInjuries.contains(fact))
+					.toList();
+		}
+
+		List<Fact> selectedFacts = activeFacts
 				.stream()
 				.filter(fact -> scopeOf(fact).matches(requestScope))
 				.limit(MAX_USER_CONTEXT_FACTS)
@@ -260,7 +275,10 @@ public class ContextRetrievalService {
 				fact.statement(),
 				fact.evidenceLevel(),
 				scopeOf(fact),
-				episodeIds);
+				episodeIds,
+				fact.factType(),
+				fact.bodyRegion(),
+				fact.expiresAt() == null ? null : fact.expiresAt().toString());
 	}
 
 	private static OpenLoop toOpenLoop(OpenLoopEntity openLoop) {

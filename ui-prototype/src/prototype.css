@@ -344,6 +344,18 @@ button {
   background: #edf5ef;
 }
 
+.roadmap-save-action {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 10px;
+  border: 1px solid var(--golf-green);
+  border-radius: 9px;
+  background: var(--golf-sage);
+  color: var(--golf-green);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .evidence-carousel {
   margin: 0 -12px;
 }
@@ -936,6 +948,140 @@ button {
   background: #ffffff;
   color: var(--golf-text);
   text-align: left;
+}
+
+.member-menu-state {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--golf-mist);
+}
+
+.member-menu-state strong {
+  color: var(--golf-green);
+  font-size: 12px;
+}
+
+.member-menu-state span,
+.member-form-note {
+  color: var(--golf-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.member-form {
+  display: grid;
+  gap: 11px;
+  padding-bottom: 12px;
+}
+
+.member-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--golf-text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.member-form input,
+.member-form select {
+  width: 100%;
+  height: 42px;
+  padding: 0 11px;
+  border: 1px solid var(--golf-line);
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: var(--golf-text);
+  font-size: 11px;
+}
+
+.member-form input:focus,
+.member-form select:focus {
+  border-color: var(--golf-green);
+  box-shadow: 0 0 0 2px rgba(20, 91, 59, 0.12);
+}
+
+.member-inline-fields {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 8px;
+}
+
+.member-form-note {
+  margin: -2px 0 0;
+}
+
+.member-mode-switch {
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--golf-green);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.member-config-warning {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #fff4e5;
+  color: #8b5a12;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.roadmap-card {
+  display: grid;
+  gap: 7px;
+  padding: 15px;
+  border: 1px solid var(--golf-line);
+  border-radius: 13px;
+  background: var(--golf-mist);
+}
+
+.roadmap-card > span,
+.roadmap-milestone small {
+  color: var(--golf-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.roadmap-card h3,
+.roadmap-card p {
+  margin: 0;
+}
+
+.roadmap-card h3 {
+  color: var(--golf-green);
+  font-size: 16px;
+}
+
+.roadmap-card > p {
+  color: var(--golf-muted);
+  font-size: 10px;
+}
+
+.roadmap-milestone {
+  display: grid;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 11px;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.roadmap-milestone strong {
+  color: var(--golf-text);
+  font-size: 12px;
+}
+
+.roadmap-milestone p {
+  color: var(--golf-muted);
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .context-editor {

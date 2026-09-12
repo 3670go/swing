@@ -49,12 +49,20 @@ public class ConversationApplicationService {
 			UUID conversationId,
 			String message,
 			ShotContext context) {
+		return chat(store.getOrCreateOwner(anonymousSessionId).id(), conversationId, message, context);
+	}
+
+	public ChatResult chat(
+			UUID ownerContextId,
+			UUID conversationId,
+			String message,
+			ShotContext context) {
 		AiProcessingClient client = aiClientProvider.getIfAvailable();
 		if (client == null) {
 			throw new PublicApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI_PROCESSING_NOT_CONFIGURED");
 		}
 		PreparedConversation prepared = store.prepareTextTurn(
-				anonymousSessionId, conversationId, message, context);
+				ownerContextId, conversationId, message, context);
 
 		UUID requestId = UUID.randomUUID();
 		UUID snapshotId = UUID.randomUUID();
@@ -80,7 +88,7 @@ public class ConversationApplicationService {
 					null, selection, contextPacket);
 			coachingPlanApplication.apply(new CoachingPlanApplicationService.ApplicationCommand(
 					requestId, prepared.ownerContextId(), prepared.conversationId(), null,
-					snapshotId, selection, response.coachingTurnPlan(), 0));
+					snapshotId, prepared.userMessageId(), selection, response.coachingTurnPlan(), 0));
 			return new ChatResult(prepared.conversationId(), rendered.chatText());
 		} catch (AiProcessingClientException error) {
 			// Python failure: no snapshot is written and no coaching state changes.
@@ -92,7 +100,8 @@ public class ConversationApplicationService {
 		return switch (error.code()) {
 			case "MODEL_RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
 			case "MODEL_TIMEOUT" -> HttpStatus.GATEWAY_TIMEOUT;
-			case "ANALYSIS_CONTRACT_FAILED" -> HttpStatus.valueOf(422);
+			case "REQUEST_CONTRACT_INVALID", "ANALYSIS_CONTRACT_FAILED", "COACHING_GUARD_REJECTED" ->
+					HttpStatus.valueOf(422);
 			default -> HttpStatus.BAD_GATEWAY;
 		};
 	}

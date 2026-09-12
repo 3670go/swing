@@ -1,5 +1,6 @@
 package com.swinganalyzer.conversation.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -35,10 +36,42 @@ public class RoadmapEntity {
 	@Column(name = "target_swing", nullable = false, columnDefinition = "text")
 	private String targetSwing;
 
+	@Column(name = "starting_state", columnDefinition = "text")
+	private String startingState;
+
 	@Column(name = "next_completion_condition", columnDefinition = "text")
 	private String nextCompletionCondition;
 
+	@Column(name = "archived_at")
+	private Instant archivedAt;
+
 	protected RoadmapEntity() {
+	}
+
+	public RoadmapEntity(
+			UUID ownerContextId,
+			UUID topicId,
+			String targetSwing,
+			String startingState,
+			String nextCompletionCondition) {
+		this.id = UUID.randomUUID();
+		this.ownerContextId = ownerContextId;
+		this.topicId = topicId;
+		this.version = 1;
+		this.active = true;
+		this.targetSwing = targetSwing;
+		this.startingState = startingState;
+		this.nextCompletionCondition = nextCompletionCondition;
+	}
+
+	public void selectCurrentMilestone(UUID milestoneId) {
+		this.currentMilestoneId = milestoneId;
+	}
+
+	public void archive() {
+		this.active = false;
+		this.archivedAt = Instant.now();
+		this.version = this.version + 1;
 	}
 
 	public UUID id() {
@@ -47,6 +80,10 @@ public class RoadmapEntity {
 
 	public UUID topicId() {
 		return topicId;
+	}
+
+	public UUID ownerContextId() {
+		return ownerContextId;
 	}
 
 	public UUID currentMilestoneId() {
@@ -63,6 +100,10 @@ public class RoadmapEntity {
 
 	public String targetSwing() {
 		return targetSwing;
+	}
+
+	public String startingState() {
+		return startingState;
 	}
 
 	public String nextCompletionCondition() {

@@ -79,7 +79,7 @@ src/main/java/com/swinganalyzer/
 
 - 내부 API 원본 계약은 `internal-api.openapi.yaml`이다.
 - 컨텍스트 코칭의 목표 schema와 상태 규칙은 `context-aware-coaching-contract.md`를 따른다.
-- OpenAPI 2.0.0과 공통 fixture는 2026-08-26에 동결했으며 Java 구현 task에서 수정하지 않는다.
+- OpenAPI 2.2.0과 공통 fixture는 2026-09-11에 확정했으며 Java 구현 task에서 수정하지 않는다.
 - 미디어는 Java가 발급한 짧은 수명의 signed read URL로 전달한다.
 - Java와 Python은 서버 전용 Bearer token으로 인증한다.
 - Java가 Python을 동기 호출하며 분석 상태와 최종 사용자 응답을 소유한다.

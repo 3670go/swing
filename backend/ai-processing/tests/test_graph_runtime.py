@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from app.domain.analysis_policy import build_base_assessment
 from app.domain.models import (
     CoachContent,
     CoachingTurnPlan,
@@ -15,7 +16,11 @@ from app.domain.models import (
     ShotContext,
     VisionObservation,
 )
-from app.graphs.coaching_guards import CoachingGuardViolation, validate_text_turn_plan
+from app.graphs.coaching_guards import (
+    CoachingGuardViolation,
+    validate_media_turn_plan,
+    validate_text_turn_plan,
+)
 from app.graphs.runtime import (
     GraphContractError,
     build_analysis_content_graph,
@@ -192,6 +197,21 @@ class FakeModel:
         self.text_values = values
         return make_text_coach_content()
 
+    async def compose_media_content(self, **values: Any) -> CoachContent:
+        self.plan_calls += 1
+        self.plan_values = values
+        assessment = values.get("base_assessment")
+        media_kind = values.get("media_kind")
+        evidence_mode = "photo_limited" if media_kind == "photo" else "video_ready"
+        if self.invalid_media_content:
+            evidence_mode = "text_only"
+        return make_plan(
+            evidence_mode=evidence_mode,
+            assessment_hash=None if assessment is None else assessment.assessment_hash,
+            progress_level=self.progress_level,
+            recognition_intensity=self.recognition_intensity,
+        ).coach_content
+
     async def compose_coaching_turn_plan(self, **values: Any) -> CoachingTurnPlan:
         self.plan_calls += 1
         self.plan_values = values
@@ -263,7 +283,7 @@ class GraphRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("shot_result", model.observe_values)
         self.assertEqual(model.observe_calls, 1)
         self.assertEqual(model.plan_calls, 1)
-        self.assertIsNotNone(model.plan_values["context_packet"].request_context.user_feel)
+        self.assertEqual(model.plan_values["question"], context_packet.request_context.user_message)
 
     async def test_analysis_observation_input_ignores_malicious_feel_changes(self) -> None:
         first_model = FakeModel(make_observation())
@@ -364,31 +384,25 @@ class GraphRuntimeTests(unittest.IsolatedAsyncioTestCase):
             validate_text_turn_plan(plan)
 
     async def test_media_observation_can_create_video_verified_progress(self) -> None:
-        model = FakeModel(make_observation(), progress_level="VIDEO_VERIFIED_PROGRESS")
-
-        async def compose_valid_plan(**values: Any) -> CoachingTurnPlan:
-            plan = await FakeModel.compose_coaching_turn_plan(model, **values)
-            assert plan.progress_candidate is not None
-            plan.progress_candidate.evidence_references = [
-                {"source_type": "OBSERVATION", "source_id": "observation:0"}
-            ]
-            return plan
-
-        model.compose_coaching_turn_plan = compose_valid_plan  # type: ignore[method-assign]
-
-        result = await build_analysis_content_graph(model).ainvoke(  # type: ignore[arg-type]
-            {
-                "frame_paths": [Path("frame.jpg")],
-                "media_kind": "video",
-                "context_packet": make_context_packet(media_presence=True),
-            }
+        observation = make_observation()
+        assessment = build_base_assessment(observation)
+        plan = make_plan(
+            evidence_mode="video_ready",
+            assessment_hash=assessment.assessment_hash,
+            progress_level="VIDEO_VERIFIED_PROGRESS",
         )
+        assert plan.progress_candidate is not None
+        plan.progress_candidate.evidence_references = [
+            {"source_type": "OBSERVATION", "source_id": "observation:0"}
+        ]
 
-        self.assertEqual(result["status"], "succeeded")
-        self.assertEqual(
-            result["coaching_turn_plan"].progress_candidate.progress_level,
-            "VIDEO_VERIFIED_PROGRESS",
+        validate_media_turn_plan(
+            plan,
+            media_kind="video",
+            assessment=assessment,
+            observation=observation,
         )
+        self.assertEqual(plan.progress_candidate.progress_level, "VIDEO_VERIFIED_PROGRESS")
 
     def test_message_only_progress_declaration_is_rejected(self) -> None:
         plan = make_plan(

@@ -1,6 +1,7 @@
 package com.swinganalyzer.conversation.infrastructure.persistence;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -50,11 +51,55 @@ public class OwnerContextEntity {
 		this.anonymousSessionHash = anonymousSessionHash;
 	}
 
+	public static OwnerContextEntity authenticated(String provider, String subject) {
+		OwnerContextEntity owner = new OwnerContextEntity();
+		owner.id = UUID.randomUUID();
+		owner.externalProvider = provider;
+		owner.externalSubject = subject;
+		owner.claimedAt = Instant.now();
+		return owner;
+	}
+
+	public void claim(String provider, String subject) {
+		if (externalSubject != null
+				&& (!Objects.equals(externalSubject, subject) || !Objects.equals(externalProvider, provider))) {
+			throw new IllegalStateException("Owner context already belongs to another identity");
+		}
+		this.externalProvider = provider;
+		this.externalSubject = subject;
+		this.claimedAt = Instant.now();
+	}
+
+	public void updateProfile(String displayName, String defaultHandedness) {
+		this.displayName = displayName;
+		this.defaultHandedness = defaultHandedness;
+	}
+
 	public UUID id() {
 		return id;
 	}
 
 	public String anonymousSessionHash() {
 		return anonymousSessionHash;
+	}
+
+	public String externalProvider() {
+		return externalProvider;
+	}
+
+	public String externalSubject() {
+		return externalSubject;
+	}
+
+	public String displayName() {
+		return displayName;
+	}
+
+	public String defaultHandedness() {
+		return defaultHandedness;
+	}
+
+	public Instant claimedAt() {
+		return claimedAt;
 	}
 }

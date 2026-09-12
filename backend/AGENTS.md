@@ -14,7 +14,7 @@
 
 `contracts/fixtures/`의 요청·응답 예시는 양쪽 구현이 공유하는 contract fixture다.
 
-`internal-api.openapi.yaml` 2.0.0과 `contracts/fixtures/`는 2026-08-26 동결 계약이다.
+`internal-api.openapi.yaml` 2.2.0과 `contracts/fixtures/`는 2026-09-11 확정 계약이다.
 Java/Python 구현 task에서는 수정하지 않고, 변경이 필요하면 별도 계약 변경 plan과 confirm을
 먼저 받는다.
 

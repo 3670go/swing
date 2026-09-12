@@ -21,6 +21,9 @@ public class CoachingTopicEntity {
 	@Column(name = "owner_context_id", nullable = false)
 	private UUID ownerContextId;
 
+	@Column(name = "conversation_id")
+	private UUID conversationId;
+
 	@Column(nullable = false)
 	private int version;
 
@@ -57,9 +60,35 @@ public class CoachingTopicEntity {
 	protected CoachingTopicEntity() {
 	}
 
+	public CoachingTopicEntity(
+			UUID ownerContextId,
+			UUID conversationId,
+			String userProblem,
+			String shotProfile,
+			String club,
+			String clubGroup,
+			String shortGameType) {
+		this.id = UUID.randomUUID();
+		this.ownerContextId = ownerContextId;
+		this.conversationId = conversationId;
+		this.version = 1;
+		this.status = "ACTIVE";
+		this.userProblem = userProblem;
+		this.rootProblem = userProblem;
+		this.shotProfile = shotProfile;
+		this.club = club;
+		this.clubGroup = clubGroup;
+		this.shortGameType = shortGameType;
+	}
+
 	/** Reframes the root problem and bumps the aggregate version (Session 3). */
 	public void reframe(String newRootProblem) {
 		this.rootProblem = newRootProblem;
+		this.version = this.version + 1;
+	}
+
+	public void pause() {
+		this.status = "PAUSED";
 		this.version = this.version + 1;
 	}
 
@@ -69,6 +98,10 @@ public class CoachingTopicEntity {
 
 	public UUID ownerContextId() {
 		return ownerContextId;
+	}
+
+	public UUID conversationId() {
+		return conversationId;
 	}
 
 	public int version() {

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import com.swinganalyzer.analysis.application.model.AiProcessingContract.Coachin
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.EvidenceReference;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.OpenLoopCandidate;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.ProgressCandidate;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.RoadmapUpdateCandidate;
 import com.swinganalyzer.conversation.application.CoachingPlanApplicationService.ApplicationCommand;
 import com.swinganalyzer.conversation.application.CoachingPlanApplicationService.ApplicationOutcome;
 import com.swinganalyzer.conversation.domain.RetrievedCoachingContext;
@@ -35,6 +37,8 @@ import com.swinganalyzer.conversation.infrastructure.persistence.OpenLoopJpaRepo
 import com.swinganalyzer.conversation.infrastructure.persistence.ProgressEventJpaRepository;
 import com.swinganalyzer.conversation.infrastructure.persistence.RecognitionEventJpaRepository;
 import com.swinganalyzer.conversation.infrastructure.persistence.RoadmapMilestoneJpaRepository;
+import com.swinganalyzer.conversation.infrastructure.persistence.RoadmapMilestoneEntity;
+import com.swinganalyzer.conversation.infrastructure.persistence.UserContextFactJpaRepository;
 
 class CoachingPlanApplicationServiceTests {
 
@@ -45,9 +49,10 @@ class CoachingPlanApplicationServiceTests {
 	private final ProgressEventJpaRepository progressEvents = mock(ProgressEventJpaRepository.class);
 	private final RecognitionEventJpaRepository recognitionEvents = mock(RecognitionEventJpaRepository.class);
 	private final OpenLoopJpaRepository openLoops = mock(OpenLoopJpaRepository.class);
+	private final UserContextFactJpaRepository facts = mock(UserContextFactJpaRepository.class);
 
 	private final CoachingPlanApplicationService service = new CoachingPlanApplicationService(
-			applications, topics, milestones, progressEvents, recognitionEvents, openLoops);
+			applications, topics, milestones, progressEvents, recognitionEvents, openLoops, facts);
 
 	private final UUID requestId = UUID.randomUUID();
 	private final UUID owner = UUID.randomUUID();
@@ -126,6 +131,61 @@ class CoachingPlanApplicationServiceTests {
 		// PostgreSQL never sees two PENDING rows for the topic.
 		verify(openLoops).saveAndFlush(existing);
 		verify(openLoops).save(any());
+	}
+
+	@Test
+	void promotesMilestoneAtMostOncePerRequest() {
+		RoadmapMilestoneEntity milestone = mock(RoadmapMilestoneEntity.class);
+		when(milestone.evidenceLevel()).thenReturn("NOT_STARTED");
+		when(milestones.findById(milestoneId)).thenReturn(Optional.of(milestone));
+		RoadmapUpdateCandidate first = new RoadmapUpdateCandidate(
+				"MILESTONE", milestoneId, 2, "MARK_USER_REPORTED_PROGRESS", null, List.of(message()));
+		RoadmapUpdateCandidate second = new RoadmapUpdateCandidate(
+				"MILESTONE", milestoneId, 2, "MARK_RESULT_REPEATED", null, List.of(message()));
+		CoachingTurnPlan plan = new CoachingTurnPlan(
+				null, null, null, List.of(first, second), null, null, null);
+
+		ApplicationOutcome outcome = service.apply(command(plan, selection(2, 2), 0));
+
+		assertThat(outcome.milestoneApplied()).isTrue();
+		verify(milestone, times(1)).promoteEvidence("USER_REPORTED_PROGRESS");
+		verify(milestones, times(1)).save(milestone);
+	}
+
+	@Test
+	void requiresCurrentObservationBeforeVideoMilestonePromotion() {
+		RoadmapMilestoneEntity milestone = mock(RoadmapMilestoneEntity.class);
+		when(milestone.evidenceLevel()).thenReturn("USER_REPORTED_PROGRESS");
+		when(milestones.findById(milestoneId)).thenReturn(Optional.of(milestone));
+		RoadmapUpdateCandidate candidate = new RoadmapUpdateCandidate(
+				"MILESTONE", milestoneId, 2, "MARK_VIDEO_VERIFIED_PROGRESS", null, List.of(message()));
+		CoachingTurnPlan plan = new CoachingTurnPlan(
+				null, null, null, List.of(candidate), null, null, null);
+
+		ApplicationOutcome outcome = service.apply(command(plan, selection(2, 2), 0));
+
+		assertThat(outcome.milestoneApplied()).isFalse();
+		verify(milestone, never()).promoteEvidence(any());
+		verify(milestones, never()).save(any());
+	}
+
+	@Test
+	void promotesVideoMilestoneOnlyWithCurrentObservationEvidence() {
+		RoadmapMilestoneEntity milestone = mock(RoadmapMilestoneEntity.class);
+		when(milestone.evidenceLevel()).thenReturn("USER_REPORTED_PROGRESS");
+		when(milestones.findById(milestoneId)).thenReturn(Optional.of(milestone));
+		EvidenceReference observation = new EvidenceReference("OBSERVATION", "observation:0");
+		RoadmapUpdateCandidate candidate = new RoadmapUpdateCandidate(
+				"MILESTONE", milestoneId, 2, "MARK_VIDEO_VERIFIED_PROGRESS", null,
+				List.of(observation));
+		CoachingTurnPlan plan = new CoachingTurnPlan(
+				null, null, null, List.of(candidate), null, null, null);
+
+		ApplicationOutcome outcome = service.apply(command(plan, selection(2, 2), 1));
+
+		assertThat(outcome.milestoneApplied()).isTrue();
+		verify(milestone).promoteEvidence("VIDEO_VERIFIED_PROGRESS");
+		verify(milestones).save(milestone);
 	}
 
 	// --- builders -------------------------------------------------------------

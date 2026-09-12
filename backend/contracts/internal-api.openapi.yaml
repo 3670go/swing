@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Swing Analyzer Internal AI API
-  version: 2.0.0
+  version: 2.2.0
   description: Frozen context-aware coaching contract between the Java Domain Application and Python AI Processing Unit.
 paths:
   /internal/health:
@@ -333,6 +333,15 @@ components:
           items:
             type: string
             format: uuid
+        fact_type:
+          type: [string, "null"]
+          enum: [BODY_TRAIT, INJURY, CURRENT_SWING_STYLE, TARGET_SWING_STYLE, null]
+        body_region:
+          type: [string, "null"]
+          maxLength: 64
+        expires_at:
+          type: [string, "null"]
+          format: date-time
     PendingOpenLoop:
       type: object
       additionalProperties: false
@@ -707,6 +716,7 @@ components:
         follow_up_information_needed:
           type: [string, "null"]
           maxLength: 180
+          description: Complete user-facing follow-up question. Renderers must not append particles or endings.
     EvidenceReference:
       type: object
       additionalProperties: false
@@ -762,6 +772,28 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+    UserContextFactCandidate:
+      type: object
+      additionalProperties: false
+      required: [action, fact_type, body_region, statement, scope]
+      properties:
+        action:
+          type: string
+          enum: [UPSERT, REMOVE]
+        fact_type:
+          type: string
+          enum: [BODY_TRAIT, INJURY, CURRENT_SWING_STYLE, TARGET_SWING_STYLE]
+        body_region:
+          type: [string, "null"]
+          maxLength: 64
+        statement:
+          type: string
+          minLength: 1
+          maxLength: 500
+        scope:
+          anyOf:
+            - $ref: "#/components/schemas/CoachingScope"
+            - type: "null"
     RoadmapUpdateCandidate:
       type: object
       additionalProperties: false
@@ -885,6 +917,7 @@ components:
         - coach_content
         - problem_reframe_candidate
         - coaching_topic_candidate
+        - user_context_fact_candidates
         - roadmap_update_candidates
         - progress_candidate
         - recognition_candidate
@@ -900,6 +933,11 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CoachingTopicCandidate"
             - type: "null"
+        user_context_fact_candidates:
+          type: array
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/UserContextFactCandidate"
         roadmap_update_candidates:
           type: array
           maxItems: 6
@@ -973,8 +1011,14 @@ components:
             - MEDIA_TYPE_UNSUPPORTED
             - MEDIA_UNAVAILABLE
             - MEDIA_DECODE_FAILED
+            - REQUEST_CONTRACT_INVALID
             - ANALYSIS_CONTRACT_FAILED
+            - COACHING_GUARD_REJECTED
+            - MODEL_REQUEST_INVALID
+            - MODEL_OUTPUT_INVALID
             - MODEL_RATE_LIMITED
+            - MODEL_AUTH_FAILED
+            - MODEL_PROVIDER_UNAVAILABLE
             - MODEL_UNAVAILABLE
             - MODEL_TIMEOUT
             - INTERNAL_ERROR

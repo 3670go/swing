@@ -19,7 +19,7 @@ public class ClientWebConfiguration implements WebMvcConfigurer {
 	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping("/**")
 				.allowedOrigins(properties.getCorsOrigins().toArray(String[]::new))
-				.allowedMethods("GET", "POST", "DELETE", "OPTIONS")
-				.allowedHeaders("Content-Type");
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+				.allowedHeaders("Content-Type", "Authorization");
 	}
 }

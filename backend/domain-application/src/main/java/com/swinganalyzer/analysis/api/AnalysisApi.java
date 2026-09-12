@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import com.swinganalyzer.analysis.application.AnalysisApplicationService;
 import com.swinganalyzer.analysis.application.AnalysisApplicationService.AnalysisResult;
@@ -20,6 +22,7 @@ import com.swinganalyzer.analysis.application.AnalysisApplicationService.History
 import com.swinganalyzer.shared.api.ShotContextRequest;
 import com.swinganalyzer.shared.api.ShotContextParser;
 import com.swinganalyzer.shared.error.PublicApiException;
+import com.swinganalyzer.conversation.application.OwnerAccountService;
 
 
 @RestController
@@ -28,16 +31,20 @@ public class AnalysisApi {
 
 	private final AnalysisApplicationService service;
 	private final ShotContextParser contextParser;
+	private final OwnerAccountService owners;
 
 	public AnalysisApi(
 			AnalysisApplicationService service,
-			ShotContextParser contextParser) {
+			ShotContextParser contextParser,
+			OwnerAccountService owners) {
 		this.service = service;
 		this.contextParser = contextParser;
+		this.owners = owners;
 	}
 
 	@PostMapping(path = "/analyze", consumes = "multipart/form-data")
 	AnalysisResult analyze(
+			@AuthenticationPrincipal Jwt jwt,
 			@RequestParam("files") List<MultipartFile> files,
 			@RequestParam("anonymous_session_id") String anonymousSessionId,
 			@RequestParam("context_json") String contextJson,
@@ -48,26 +55,35 @@ public class AnalysisApi {
 			throw new PublicApiException(HttpStatus.valueOf(422), "INVALID_REQUEST");
 		}
 		ShotContextRequest context = contextParser.parseJson(contextJson);
+		UUID ownerContextId = owners.resolve(
+				anonymousSessionId, jwt == null ? null : jwt.getSubject());
 		return service.analyze(
 				files,
-				anonymousSessionId,
+				ownerContextId,
 				conversationId,
 				context.toInternal(),
 				question.strip());
 	}
 
 	@GetMapping("/history")
-	HistoryResponse history(@RequestParam("anonymous_session_id") String anonymousSessionId) {
+	HistoryResponse history(
+			@AuthenticationPrincipal Jwt jwt,
+			@RequestParam("anonymous_session_id") String anonymousSessionId) {
 		validateSession(anonymousSessionId);
-		return new HistoryResponse(service.history(anonymousSessionId));
+		UUID ownerContextId = owners.resolve(
+				anonymousSessionId, jwt == null ? null : jwt.getSubject());
+		return new HistoryResponse(service.history(ownerContextId));
 	}
 
 	@DeleteMapping("/analysis/{runId}")
 	ResponseEntity<Void> delete(
+			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable UUID runId,
 			@RequestParam("anonymous_session_id") String anonymousSessionId) {
 		validateSession(anonymousSessionId);
-		service.delete(anonymousSessionId, runId);
+		UUID ownerContextId = owners.resolve(
+				anonymousSessionId, jwt == null ? null : jwt.getSubject());
+		service.delete(ownerContextId, runId);
 		return ResponseEntity.noContent().build();
 	}
 

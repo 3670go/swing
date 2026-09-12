@@ -109,7 +109,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_unexpected_interaction_meta_field(self) -> None:
         payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
@@ -128,7 +128,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_invalid_interaction_meta_response_mode(self) -> None:
         payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
@@ -152,7 +152,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_invalid_interaction_meta_invite_mode(self) -> None:
         payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
@@ -176,7 +176,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_duplicate_source_episode_ids(self) -> None:
         payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
@@ -204,7 +204,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_analysis_request_without_media_presence(self) -> None:
         payload = copy.deepcopy(load_fixture("analysis-request.json"))
@@ -217,7 +217,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
     def test_rejects_text_request_with_media_presence(self) -> None:
         payload = copy.deepcopy(load_fixture("text-coaching-request.json"))
@@ -230,7 +230,7 @@ class InternalApiTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertEqual(response.json()["code"], "ANALYSIS_CONTRACT_FAILED")
+        self.assertEqual(response.json()["code"], "REQUEST_CONTRACT_INVALID")
 
 
 if __name__ == "__main__":

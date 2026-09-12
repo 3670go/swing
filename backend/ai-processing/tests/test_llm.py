@@ -18,6 +18,7 @@ from app.llm import (
     GeminiModelAdapter,
     ModelCallError,
     ModelNotConfiguredError,
+    TextCoachDraft,
     _build_transport_schema,
 )
 
@@ -193,9 +194,11 @@ class GeminiModelAdapterTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result, expected)
         call = client.models.calls[0]
-        self.assertEqual(len(call["contents"]), 2)
+        self.assertEqual(len(call["contents"]), 4)
         self.assertNotIn("왼쪽으로 밀리는 느낌", call["contents"][0])
-        self.assertEqual(call["contents"][1].inline_data.mime_type, "image/jpeg")
+        self.assertIn("[미디어 A 시작]", call["contents"][1])
+        self.assertEqual(call["contents"][2].inline_data.mime_type, "image/jpeg")
+        self.assertEqual(call["contents"][3], "[미디어 A 끝]")
         self.assertIsNone(call["config"].response_schema)
         self.assertEqual(
             call["config"].response_json_schema, _build_transport_schema(VisionObservation)
@@ -258,22 +261,41 @@ class GeminiModelAdapterTests(unittest.IsolatedAsyncioTestCase):
         # The canonical Pydantic model still declares defaults and nullable unions.
         self.assertTrue(_schema_has_key(CoachContent.model_json_schema(), "anyOf"))
 
-    async def test_compose_text_coach_content_uses_coach_content_transport_schema(self) -> None:
+    async def test_compose_text_coach_content_uses_reduced_transport_schema(self) -> None:
         fixture_root = Path(__file__).resolve().parents[2] / "contracts" / "fixtures"
         request_body = json.loads(
             (fixture_root / "text-coaching-request.json").read_text(encoding="utf-8")
         )
         packet = ContextPacket.model_validate(request_body["context_packet"])
         expected = make_text_content()
-        client = FakeGeminiClient([expected])
+        draft = {
+            "direct_answer": expected.direct_answer,
+            "causal_chain": expected.causal_chain,
+            "cannot_determine": expected.cannot_determine,
+            "single_change": expected.single_change,
+            "verification": expected.verification,
+            "follow_up_question": expected.follow_up_information_needed,
+        }
+        client = FakeGeminiClient([draft])
         adapter = GeminiModelAdapter(make_settings(), client=client)  # type: ignore[arg-type]
 
         result = await adapter.compose_text_coach_content(context_packet=packet)
 
-        self.assertEqual(result, expected)
+        self.assertEqual(result.direct_answer, expected.direct_answer)
+        self.assertEqual(result.causal_chain, expected.causal_chain)
+        self.assertEqual(result.single_change, expected.single_change)
+        self.assertEqual(result.verification, expected.verification)
+        self.assertEqual(result.evidence_mode, "text_only")
+        self.assertEqual(result.observation_indexes, [])
+        self.assertIsNone(result.base_assessment_hash)
+        self.assertIsNone(result.preserve_candidate)
+        self.assertIsNone(result.preserve_topic)
         call = client.models.calls[0]
         self.assertIsNone(call["config"].response_schema)
-        self.assertEqual(call["config"].response_json_schema, _build_transport_schema(CoachContent))
+        self.assertEqual(
+            call["config"].response_json_schema,
+            _build_transport_schema(TextCoachDraft),
+        )
         self.assertIn("context_packet", call["contents"])
 
     async def test_invalid_model_output_is_rejected_by_strict_pydantic_parse(self) -> None:

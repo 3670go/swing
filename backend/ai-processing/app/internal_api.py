@@ -88,8 +88,14 @@ def _processing_status(code: str) -> int:
         "MEDIA_TYPE_UNSUPPORTED": status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         "MEDIA_UNAVAILABLE": status.HTTP_422_UNPROCESSABLE_CONTENT,
         "MEDIA_DECODE_FAILED": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "REQUEST_CONTRACT_INVALID": status.HTTP_422_UNPROCESSABLE_CONTENT,
         "ANALYSIS_CONTRACT_FAILED": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "COACHING_GUARD_REJECTED": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "MODEL_REQUEST_INVALID": status.HTTP_502_BAD_GATEWAY,
+        "MODEL_OUTPUT_INVALID": status.HTTP_502_BAD_GATEWAY,
         "MODEL_RATE_LIMITED": status.HTTP_429_TOO_MANY_REQUESTS,
+        "MODEL_AUTH_FAILED": status.HTTP_502_BAD_GATEWAY,
+        "MODEL_PROVIDER_UNAVAILABLE": status.HTTP_502_BAD_GATEWAY,
         "MODEL_UNAVAILABLE": status.HTTP_502_BAD_GATEWAY,
         "MODEL_TIMEOUT": status.HTTP_504_GATEWAY_TIMEOUT,
     }.get(code, status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -108,7 +114,7 @@ def _error_response(error: InternalApiError) -> JSONResponse:
 
 internal_app = FastAPI(
     title="Swing Analyzer Internal AI API",
-    version="2.0.0",
+    version="2.1.0",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
@@ -122,12 +128,13 @@ async def handle_internal_api_error(_request: Request, error: InternalApiError) 
 
 @internal_app.exception_handler(RequestValidationError)
 async def handle_internal_validation_error(
-    _request: Request,
+    request: Request,
     _error: RequestValidationError,
 ) -> JSONResponse:
+    logger.warning("Internal request validation failed path=%s", request.url.path)
     return _error_response(
         InternalApiError(
-            code="ANALYSIS_CONTRACT_FAILED",
+            code="REQUEST_CONTRACT_INVALID",
             message="Internal request validation failed",
             retryable=False,
             request_id=uuid.uuid4(),

@@ -36,9 +36,10 @@ class ConversationApplicationServiceTests {
 		Fixture fixture = new Fixture();
 		UUID conversationId = UUID.randomUUID();
 		UUID ownerId = UUID.randomUUID();
+		UUID userMessageId = UUID.randomUUID();
 		when(fixture.provider.getIfAvailable()).thenReturn(fixture.client);
-		when(fixture.store.prepareTextTurn(any(), any(), any(), any()))
-				.thenReturn(new PreparedConversation(conversationId, ownerId));
+		when(fixture.store.prepareTextTurn(eq(ownerId), any(), any(), any()))
+				.thenReturn(new PreparedConversation(conversationId, ownerId, userMessageId));
 		when(fixture.retrieval.retrieve(eq(ownerId), eq(conversationId), any(), any()))
 				.thenReturn(ContextSelection.empty());
 		when(fixture.client.coachText(any(InternalTextCoachingRequest.class))).thenAnswer(invocation -> {
@@ -47,7 +48,7 @@ class ConversationApplicationServiceTests {
 		});
 
 		ChatResult result = fixture.service.chat(
-				"anonymous-session-0001", null, "자꾸 당겨 치는 느낌이야", SHOT_CONTEXT);
+				ownerId, null, "자꾸 당겨 치는 느낌이야", SHOT_CONTEXT);
 
 		assertThat(result.reply())
 				.contains("가슴이 먼저 열리는지 확인해보세요")
@@ -70,9 +71,10 @@ class ConversationApplicationServiceTests {
 		Fixture fixture = new Fixture();
 		UUID conversationId = UUID.randomUUID();
 		UUID ownerId = UUID.randomUUID();
+		UUID userMessageId = UUID.randomUUID();
 		when(fixture.provider.getIfAvailable()).thenReturn(fixture.client);
-		when(fixture.store.prepareTextTurn(any(), any(), any(), any()))
-				.thenReturn(new PreparedConversation(conversationId, ownerId));
+		when(fixture.store.prepareTextTurn(eq(ownerId), any(), any(), any()))
+				.thenReturn(new PreparedConversation(conversationId, ownerId, userMessageId));
 		when(fixture.retrieval.retrieve(eq(ownerId), eq(conversationId), any(), any()))
 				.thenReturn(ContextSelection.empty());
 		when(fixture.client.coachText(any(InternalTextCoachingRequest.class)))
@@ -80,7 +82,7 @@ class ConversationApplicationServiceTests {
 						"MODEL_TIMEOUT", "timed out", false, 504, UUID.randomUUID(), null, null));
 
 		try {
-			fixture.service.chat("anonymous-session-0001", null, "당겨 친다", SHOT_CONTEXT);
+			fixture.service.chat(ownerId, null, "당겨 친다", SHOT_CONTEXT);
 		} catch (RuntimeException expected) {
 			// mapped to a PublicApiException; state invariance is what we assert below
 		}

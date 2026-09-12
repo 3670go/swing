@@ -1,5 +1,7 @@
 package com.swinganalyzer.conversation.application;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import com.swinganalyzer.analysis.application.model.AiProcessingContract.Problem
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.ProgressCandidate;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.RecognitionCandidate;
 import com.swinganalyzer.analysis.application.model.AiProcessingContract.RoadmapUpdateCandidate;
+import com.swinganalyzer.analysis.application.model.AiProcessingContract.UserContextFactCandidate;
 import com.swinganalyzer.conversation.domain.RetrievedCoachingContext;
 import com.swinganalyzer.conversation.domain.RetrievedCoachingContext.Milestone;
 import com.swinganalyzer.conversation.infrastructure.persistence.CoachingRequestApplicationEntity;
@@ -32,6 +35,8 @@ import com.swinganalyzer.conversation.infrastructure.persistence.RecognitionEven
 import com.swinganalyzer.conversation.infrastructure.persistence.RecognitionEventJpaRepository;
 import com.swinganalyzer.conversation.infrastructure.persistence.RoadmapMilestoneEntity;
 import com.swinganalyzer.conversation.infrastructure.persistence.RoadmapMilestoneJpaRepository;
+import com.swinganalyzer.conversation.infrastructure.persistence.UserContextFactEntity;
+import com.swinganalyzer.conversation.infrastructure.persistence.UserContextFactJpaRepository;
 
 /**
  * Applies validated Coaching Turn Plan candidates to Java-owned product state.
@@ -79,6 +84,7 @@ public class CoachingPlanApplicationService {
 	private final ProgressEventJpaRepository progressEvents;
 	private final RecognitionEventJpaRepository recognitionEvents;
 	private final OpenLoopJpaRepository openLoops;
+	private final UserContextFactJpaRepository facts;
 
 	public CoachingPlanApplicationService(
 			CoachingRequestApplicationJpaRepository applications,
@@ -86,13 +92,15 @@ public class CoachingPlanApplicationService {
 			RoadmapMilestoneJpaRepository milestones,
 			ProgressEventJpaRepository progressEvents,
 			RecognitionEventJpaRepository recognitionEvents,
-			OpenLoopJpaRepository openLoops) {
+			OpenLoopJpaRepository openLoops,
+			UserContextFactJpaRepository facts) {
 		this.applications = applications;
 		this.topics = topics;
 		this.milestones = milestones;
 		this.progressEvents = progressEvents;
 		this.recognitionEvents = recognitionEvents;
 		this.openLoops = openLoops;
+		this.facts = facts;
 	}
 
 	@Transactional
@@ -118,6 +126,8 @@ public class CoachingPlanApplicationService {
 
 		ApplicationOutcome.Builder outcome = ApplicationOutcome.builder();
 
+		topicId = applyTopic(plan, command.ownerId(), command.conversationId(), topicId);
+		applyUserContextFacts(plan, command.ownerId(), command.userMessageId());
 		applyReframe(plan, evidence, command.ownerId(), outcome);
 		applyMilestone(plan, evidence, outcome);
 		ProgressEventEntity progress = applyProgress(
@@ -127,6 +137,94 @@ public class CoachingPlanApplicationService {
 
 		applications.save(applied(command));
 		return outcome.build();
+	}
+
+	// --- coaching topic -------------------------------------------------------
+
+	private UUID applyTopic(
+			CoachingTurnPlan plan,
+			UUID ownerId,
+			UUID conversationId,
+			UUID activeTopicId) {
+		CoachingTopicCandidate candidate = plan.coachingTopicCandidate();
+		if (candidate == null || !"CREATE_NEW".equals(candidate.action()) || activeTopicId != null
+				|| candidate.scope() == null) {
+			return activeTopicId;
+		}
+		topics.findFirstByOwnerContextIdAndStatus(ownerId, "ACTIVE").ifPresent(existing -> {
+			existing.pause();
+			topics.saveAndFlush(existing);
+		});
+		CoachingTopicEntity created = topics.save(new CoachingTopicEntity(
+				ownerId,
+				conversationId,
+				candidate.title(),
+				candidate.scope().shotProfile(),
+				candidate.scope().club(),
+				candidate.scope().clubGroup(),
+				candidate.scope().shortGameType()));
+		return created.id();
+	}
+
+	// --- user context facts --------------------------------------------------
+
+	private void applyUserContextFacts(CoachingTurnPlan plan, UUID ownerId, UUID userMessageId) {
+		List<UserContextFactCandidate> candidates = plan.userContextFactCandidates();
+		if (candidates == null || candidates.isEmpty()) {
+			return;
+		}
+		List<UserContextFactEntity> active = new java.util.ArrayList<>(
+				facts.findByOwnerContextIdAndSupersededAtIsNullOrderByValidFromDesc(ownerId));
+		for (UserContextFactCandidate candidate : candidates) {
+			UserContextFactEntity existing = active.stream()
+					.filter(fact -> sameFactSlot(fact, candidate))
+					.findFirst()
+					.orElse(null);
+			if ("REMOVE".equals(candidate.action())) {
+				if (existing != null) {
+					facts.delete(existing);
+					active.remove(existing);
+				}
+				continue;
+			}
+			if (!"UPSERT".equals(candidate.action())) {
+				continue;
+			}
+			Instant expiresAt = "INJURY".equals(candidate.factType())
+					? Instant.now().plus(90, ChronoUnit.DAYS)
+					: null;
+			if (existing != null) {
+				existing.refresh(candidate.statement(), userMessageId, expiresAt);
+				facts.save(existing);
+				continue;
+			}
+			var scope = candidate.scope();
+			UserContextFactEntity created = facts.save(new UserContextFactEntity(
+					ownerId,
+					candidate.factType(),
+					candidate.bodyRegion(),
+					candidate.statement(),
+					scope == null ? null : scope.shotProfile(),
+					scope == null ? null : scope.club(),
+					scope == null ? null : scope.clubGroup(),
+					scope == null ? null : scope.shortGameType(),
+					userMessageId,
+					expiresAt));
+			active.add(created);
+		}
+	}
+
+	private static boolean sameFactSlot(
+			UserContextFactEntity fact,
+			UserContextFactCandidate candidate) {
+		var scope = candidate.scope();
+		return java.util.Objects.equals(fact.factType(), candidate.factType())
+				&& java.util.Objects.equals(fact.bodyRegion(), candidate.bodyRegion())
+				&& java.util.Objects.equals(fact.shotProfile(), scope == null ? null : scope.shotProfile())
+				&& java.util.Objects.equals(fact.club(), scope == null ? null : scope.club())
+				&& java.util.Objects.equals(fact.clubGroup(), scope == null ? null : scope.clubGroup())
+				&& java.util.Objects.equals(
+						fact.shortGameType(), scope == null ? null : scope.shortGameType());
 	}
 
 	// --- reframe --------------------------------------------------------------
@@ -175,6 +273,7 @@ public class CoachingPlanApplicationService {
 			milestone.promoteEvidence(targetLevel);
 			milestones.save(milestone);
 			outcome.milestoneApplied();
+			return;
 		}
 	}
 
@@ -432,9 +531,31 @@ public class CoachingPlanApplicationService {
 			UUID conversationId,
 			UUID analysisRunId,
 			UUID snapshotId,
+			UUID userMessageId,
 			ContextSelection selection,
 			CoachingTurnPlan plan,
 			int observationCount) {
+
+		public ApplicationCommand(
+				UUID requestId,
+				UUID ownerId,
+				UUID conversationId,
+				UUID analysisRunId,
+				UUID snapshotId,
+				ContextSelection selection,
+				CoachingTurnPlan plan,
+				int observationCount) {
+			this(
+					requestId,
+					ownerId,
+					conversationId,
+					analysisRunId,
+					snapshotId,
+					null,
+					selection,
+					plan,
+					observationCount);
+		}
 	}
 
 	/** Traceable result: which candidate kinds were applied, or why blocked. */

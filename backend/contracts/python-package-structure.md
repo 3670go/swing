@@ -79,7 +79,7 @@ Python에는 제품 Repository와 migration을 두지 않는다.
 - `POST /internal/v1/coaching/text`
 - 요청·응답 원본 계약은 `internal-api.openapi.yaml`이다.
 - 컨텍스트 코칭의 목표 schema와 상태 규칙은 `context-aware-coaching-contract.md`를 따른다.
-- OpenAPI 2.0.0과 공통 fixture는 2026-08-26에 동결했으며 Python 구현 task에서 수정하지 않는다.
+- OpenAPI 2.2.0과 공통 fixture는 2026-09-11에 확정했으며 Python 구현 task에서 수정하지 않는다.
 - 분석·코칭 요청은 응답이 완성될 때까지 기다리는 동기 HTTP 방식이다.
 - 분석 미디어는 signed read URL에서 임시 디렉터리로 내려받고 요청 종료 후 제거한다.
 - Python은 signed URL, 사용자 원문, 인증 token을 로그에 남기지 않는다.

@@ -51,16 +51,28 @@ public class AnalysisStore {
 			String question,
 			String mediaKind,
 			String model) {
-		OwnerContextEntity owner = conversationStore.getOrCreateOwner(anonymousSessionId);
+		return start(
+				conversationStore.getOrCreateOwner(anonymousSessionId).id(), requestedConversationId,
+				context, question, mediaKind, model);
+	}
+
+	@Transactional
+	public StartedAnalysis start(
+			UUID ownerContextId,
+			UUID requestedConversationId,
+			ShotContext context,
+			String question,
+			String mediaKind,
+			String model) {
 		ConversationEntity conversation = conversationStore.getOrCreateConversation(
-				owner.id(), requestedConversationId);
+				ownerContextId, requestedConversationId);
 		conversation.updateContext(context.shotProfile(), context.club(), context.analysisGoal());
 
 		Map<String, Object> shotResult = context.shotResult() == null
 				? null
 				: Map.of("value", context.shotResult());
 		SwingSessionEntity swingSession = swingSessions.save(new SwingSessionEntity(
-				owner.id(),
+				ownerContextId,
 				conversation.id(),
 				context.shotProfile(),
 				context.club(),
@@ -73,13 +85,13 @@ public class AnalysisStore {
 		AnalysisRunEntity run = analysisRuns.save(new AnalysisRunEntity(
 				swingSession.id(), conversation.id(), mediaKind, model));
 		conversation.activateAnalysis(run.id());
-		messages.save(new ChatMessageEntity(
+		ChatMessageEntity userMessage = messages.save(new ChatMessageEntity(
 				conversation.id(),
 				run.id(),
 				"user",
 				question.isBlank() ? "전체 우선순위로 분석해줘" : question,
 				null));
-		return new StartedAnalysis(owner.id(), conversation.id(), swingSession.id(), run.id());
+		return new StartedAnalysis(ownerContextId, conversation.id(), swingSession.id(), run.id(), userMessage.id());
 	}
 
 	@Transactional
@@ -154,7 +166,8 @@ public class AnalysisStore {
 			UUID ownerId,
 			UUID conversationId,
 			UUID swingSessionId,
-			UUID runId) {
+			UUID runId,
+			UUID userMessageId) {
 	}
 
 	public record HistoryEntry(AnalysisRunEntity run, SwingSessionEntity swingSession) {

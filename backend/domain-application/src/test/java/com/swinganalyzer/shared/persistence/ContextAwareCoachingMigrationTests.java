@@ -32,11 +32,11 @@ class ContextAwareCoachingMigrationTests {
 	}
 
 	@Test
-	void appliesV1ThroughV5WithoutRecreatingObjectsOnSecondMigrationRun() throws SQLException {
+	void appliesV1ThroughV7WithoutRecreatingObjectsOnSecondMigrationRun() throws SQLException {
 		Integer installedRank = queryInteger("""
 				select installed_rank
 				from flyway_schema_history
-				where version = '5'
+				where version = '7'
 				""");
 
 		assertThat(installedRank).isNotNull();
@@ -77,9 +77,8 @@ class ContextAwareCoachingMigrationTests {
 
 	@Test
 	void rejectsCurrentMilestoneFromDifferentRoadmap() throws SQLException {
-		UUID ownerId = createOwner();
-		UUID firstRoadmapId = createRoadmap(ownerId, "first target");
-		UUID secondRoadmapId = createRoadmap(ownerId, "second target");
+		UUID firstRoadmapId = createRoadmap(createOwner(), "first target");
+		UUID secondRoadmapId = createRoadmap(createOwner(), "second target");
 		UUID secondRoadmapMilestoneId = createMilestone(secondRoadmapId, 1);
 
 		assertThatThrownBy(() -> execute("""
@@ -87,6 +86,15 @@ class ContextAwareCoachingMigrationTests {
 				set current_milestone_id = ?
 				where id = ?
 				""", secondRoadmapMilestoneId, firstRoadmapId))
+				.isInstanceOf(SQLException.class);
+	}
+
+	@Test
+	void rejectsSecondActiveRoadmapForSameOwner() throws SQLException {
+		UUID ownerId = createOwner();
+		createRoadmap(ownerId, "first target");
+
+		assertThatThrownBy(() -> createRoadmap(ownerId, "second target"))
 				.isInstanceOf(SQLException.class);
 	}
 

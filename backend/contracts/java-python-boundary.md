@@ -39,7 +39,7 @@ Python은 공개 API, 사용자 식별, 권한, 이력 조회, 삭제를 처리�
 - `POST /internal/v1/coaching/text`
 
 요청·응답의 필드, enum, 길이 제한은 2026-08-26에 동결한
-`internal-api.openapi.yaml` 2.0.0을 따른다. Java와 Python 테스트는 `fixtures/`의 같은 JSON을
+`internal-api.openapi.yaml` 2.2.0을 따른다. Java와 Python 테스트는 `fixtures/`의 같은 JSON을
 사용한다. 구현 task는 OpenAPI와 fixture를 수정하지 않고 코드가 계약에 맞도록 변경한다.
 
 Java는 최근 대화, 분석 근거와 코칭 상태를 제한에 맞게 선택한 `ContextPacket`을 조립해
@@ -125,8 +125,14 @@ Python은 제품 이력의 원본 시스템이 아니며 Java 소유 제품 테�
 | 415 | `MEDIA_TYPE_UNSUPPORTED` | 지원하지 않는 형식 |
 | 422 | `MEDIA_UNAVAILABLE` | signed URL 접근 또는 다운로드 실패 |
 | 422 | `MEDIA_DECODE_FAILED` | 파일 또는 프레임 해석 실패 |
+| 422 | `REQUEST_CONTRACT_INVALID` | 내부 요청 schema 검증 실패 |
 | 422 | `ANALYSIS_CONTRACT_FAILED` | 분석 근거 계약 위반 |
+| 422 | `COACHING_GUARD_REJECTED` | 코칭 결과가 결정적 근거 guard를 통과하지 못함 |
+| 502 | `MODEL_REQUEST_INVALID` | Provider가 구조화 요청 schema를 거부함 |
+| 502 | `MODEL_OUTPUT_INVALID` | Provider 응답이 구조화 출력 schema를 통과하지 못함 |
 | 429 | `MODEL_RATE_LIMITED` | Provider rate limit |
+| 502 | `MODEL_AUTH_FAILED` | Provider 인증 실패 |
+| 502 | `MODEL_PROVIDER_UNAVAILABLE` | Provider 서비스 오류 |
 | 502 | `MODEL_UNAVAILABLE` | Provider 호출 실패 |
 | 504 | `MODEL_TIMEOUT` | Provider 처리 시간 초과 |
 | 500 | `INTERNAL_ERROR` | 분류되지 않은 내부 오류 |

@@ -23,7 +23,7 @@ import com.swinganalyzer.conversation.domain.RetrievedCoachingContext.Roadmap;
 
 /**
  * Maps a {@link ContextSelection} (DB-backed coaching state + recent dialogue)
- * into the frozen 2.0.0 transport {@code ContextPacket}.
+ * into the confirmed 2.1.0 transport {@code ContextPacket}.
  *
  * <p>The recent dialogue is already deduplicated and capped by
  * {@link ContextRetrievalService}. Analysis episodes have no V5 table and are left
@@ -50,7 +50,7 @@ public class ContextPacketAssembler {
 				toRoadmapContext(coaching.roadmap()),
 				selection.recentDialogue(),
 				List.of(),
-				toFacts(coaching.facts()),
+				toFacts(coaching.facts(), shotContext),
 				toPendingOpenLoop(coaching),
 				toRecognitionContext(coaching.recognition()));
 	}
@@ -108,16 +108,30 @@ public class ContextPacketAssembler {
 	}
 
 	private static List<com.swinganalyzer.analysis.application.model.AiProcessingContract.UserContextFact> toFacts(
-			List<Fact> facts) {
+			List<Fact> facts,
+			ShotContext shotContext) {
 		return facts.stream()
 				.map(fact -> new com.swinganalyzer.analysis.application.model.AiProcessingContract.UserContextFact(
 						fact.factId(),
 						fact.version(),
 						fact.statement(),
 						fact.evidenceLevel(),
-						toScope(fact.scope()),
-						fact.sourceEpisodeIds()))
+						toFactScope(fact.scope(), shotContext),
+						fact.sourceEpisodeIds(),
+						fact.factType(),
+						fact.bodyRegion(),
+						fact.expiresAt()))
 				.toList();
+	}
+
+	private static com.swinganalyzer.analysis.application.model.AiProcessingContract.CoachingScope toFactScope(
+			RetrievedCoachingContext.CoachingScope scope,
+			ShotContext shotContext) {
+		if (scope != null && (scope.club() != null || scope.clubGroup() != null)) {
+			return toScope(scope);
+		}
+		return new com.swinganalyzer.analysis.application.model.AiProcessingContract.CoachingScope(
+				shotContext.shotProfile(), shotContext.club(), null, shotContext.shortGameType());
 	}
 
 	private static PendingOpenLoop toPendingOpenLoop(RetrievedCoachingContext coaching) {

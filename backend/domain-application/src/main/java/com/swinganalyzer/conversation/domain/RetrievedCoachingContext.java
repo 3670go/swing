@@ -89,7 +89,10 @@ public record RetrievedCoachingContext(
 			String statement,
 			String evidenceLevel,
 			CoachingScope scope,
-			List<UUID> sourceEpisodeIds) {
+			List<UUID> sourceEpisodeIds,
+			String factType,
+			String bodyRegion,
+			String expiresAt) {
 
 		public Fact {
 			sourceEpisodeIds = sourceEpisodeIds == null ? List.of() : List.copyOf(sourceEpisodeIds);

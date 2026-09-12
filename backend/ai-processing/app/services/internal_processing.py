@@ -1,3 +1,5 @@
+import logging
+import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,11 +18,49 @@ from app.graphs.runtime import (
     GraphContractError,
     build_analysis_content_graph,
     build_text_content_graph,
+    build_text_turn_plan,
 )
 from app.llm import ModelAdapter, ModelCallError, ModelNotConfiguredError
 from app.media_processing import MediaProcessingError
 from app.ports.frame_extractor import FrameExtractor
 from app.ports.media_reader import MediaReader, RemoteMediaReference
+
+logger = logging.getLogger(__name__)
+
+COACHING_GRAPH_MARKERS = (
+    "왜",
+    "원인",
+    "어떻게",
+    "방법",
+    "교정",
+    "고쳐",
+    "고치는",
+    "분석",
+    "진단",
+    "비교",
+    "차이",
+    "맞아",
+    "해야",
+    "해도",
+    "문제",
+    "드릴",
+    "연습법",
+    "자세",
+    "동작",
+    "메커니즘",
+    "매커니즘",
+    "괜찮",
+    "좋은 거",
+    "좋은거",
+)
+
+
+def _is_conversation_turn(context_packet: ContextPacket) -> bool:
+    """Keep broad or relational text in the one-call conversation path."""
+    if context_packet.request_context.media_presence:
+        return False
+    message = re.sub(r"\s+", "", context_packet.request_context.user_message.casefold())
+    return len(message) <= 80 and not any(marker in message for marker in COACHING_GRAPH_MARKERS)
 
 
 @dataclass(frozen=True)
@@ -87,7 +127,8 @@ class InternalAiProcessingService:
                     if media.kind == "photo":
                         frame_paths.append(media.path)
                         continue
-                    frame_directory = temp_dir / f"frames_{index:02d}"
+                    media_id = command.media[index - 1].media_id
+                    frame_directory = temp_dir / f"frames_{index:02d}_{media_id}"
                     frame_directory.mkdir()
                     frame_paths.extend(
                         await self._frame_extractor.extract(
@@ -139,21 +180,32 @@ class InternalAiProcessingService:
         )
 
     async def coach_text(self, command: InternalTextCoachingCommand) -> CoachingTurnPlan:
-        self._require_model()
         try:
+            if _is_conversation_turn(command.context_packet):
+                generated = await self._model.compose_conversation_reply(
+                    context_packet=command.context_packet,
+                )
+                return build_text_turn_plan(generated, command.context_packet)
             result = await self._text_graph.ainvoke(
                 {
                     "context_packet": command.context_packet,
                 }
             )
         except GraphContractError as error:
+            logger.warning("Text coaching guard rejected request_id=%s", command.request_id)
             raise InternalProcessingError(
-                "ANALYSIS_CONTRACT_FAILED",
+                "COACHING_GUARD_REJECTED",
                 "Coaching output violated the evidence contract",
                 retryable=False,
             ) from error
         except (ModelCallError, ModelNotConfiguredError) as error:
-            raise self._model_error(error) from error
+            mapped = self._model_error(error)
+            logger.warning(
+                "Text coaching model failed request_id=%s code=%s",
+                command.request_id,
+                mapped.code,
+            )
+            raise mapped from error
         return result["coaching_turn_plan"]
 
     def _require_model(self) -> None:
@@ -173,11 +225,29 @@ class InternalAiProcessingService:
                 "AI model rate limit reached",
                 retryable=True,
             )
-        if code in {"MODEL_RESPONSE_INVALID", "MODEL_REQUEST_INVALID"}:
+        if code == "MODEL_RESPONSE_INVALID":
             return InternalProcessingError(
-                "ANALYSIS_CONTRACT_FAILED",
+                "MODEL_OUTPUT_INVALID",
                 "AI model returned an invalid structured response",
                 retryable=False,
+            )
+        if code == "MODEL_REQUEST_INVALID":
+            return InternalProcessingError(
+                "MODEL_REQUEST_INVALID",
+                "AI model rejected the structured request",
+                retryable=False,
+            )
+        if code == "MODEL_AUTH_FAILED":
+            return InternalProcessingError(
+                "MODEL_AUTH_FAILED",
+                "AI model authentication failed",
+                retryable=False,
+            )
+        if code == "MODEL_PROVIDER_UNAVAILABLE":
+            return InternalProcessingError(
+                "MODEL_PROVIDER_UNAVAILABLE",
+                "AI model provider is unavailable",
+                retryable=True,
             )
         if code == "MODEL_TIMEOUT":
             return InternalProcessingError(

@@ -32,6 +32,12 @@ RecognitionIntensity = Literal[
     "PROGRESS_DECLARATION",
     "IDENTITY_CONNECTION",
 ]
+UserContextFactType = Literal[
+    "BODY_TRAIT",
+    "INJURY",
+    "CURRENT_SWING_STYLE",
+    "TARGET_SWING_STYLE",
+]
 
 
 class StrictModel(BaseModel):
@@ -126,6 +132,9 @@ class UserContextFact(StrictModel):
     ]
     scope: CoachingScope
     source_episode_ids: list[UUID] = Field(max_length=3)
+    fact_type: UserContextFactType | None = None
+    body_region: str | None = Field(default=None, max_length=64)
+    expires_at: datetime | None = None
 
     @model_validator(mode="after")
     def reject_duplicate_source_episode_ids(self) -> "UserContextFact":
@@ -293,6 +302,14 @@ class CoachingTopicCandidate(StrictModel):
     title: str = Field(min_length=1, max_length=200)
 
 
+class UserContextFactCandidate(StrictModel):
+    action: Literal["UPSERT", "REMOVE"]
+    fact_type: UserContextFactType
+    body_region: str | None = Field(default=None, max_length=64)
+    statement: str = Field(min_length=1, max_length=500)
+    scope: CoachingScope | None
+
+
 class RoadmapUpdateCandidate(StrictModel):
     target_type: Literal["ROADMAP", "MILESTONE"]
     target_id: UUID | None
@@ -336,6 +353,10 @@ class CoachingTurnPlan(StrictModel):
     coach_content: CoachContent
     problem_reframe_candidate: ProblemReframeCandidate | None
     coaching_topic_candidate: CoachingTopicCandidate | None
+    user_context_fact_candidates: list[UserContextFactCandidate] = Field(
+        default_factory=list,
+        max_length=4,
+    )
     roadmap_update_candidates: list[RoadmapUpdateCandidate] = Field(max_length=6)
     progress_candidate: ProgressCandidate | None
     recognition_candidate: RecognitionCandidate | None
