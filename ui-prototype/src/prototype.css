@@ -832,6 +832,18 @@ button {
   box-shadow: 0 -8px 24px rgba(24, 35, 29, 0.06);
 }
 
+.sheet-overlay {
+  z-index: 90;
+}
+
+.bottom-sheet {
+  z-index: 91;
+}
+
+.keyboard-dock {
+  z-index: 100;
+}
+
 .composer-context {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
