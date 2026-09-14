@@ -237,6 +237,9 @@ const roadmapEvidenceLabels: Record<string, string> = {
   MILESTONE_COMPLETED: "단계 완료",
 };
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8080").replace(/\/$/, "");
+const anonymousSessionStorageKey = "swing-analyzer-anonymous-session";
+const anonymousActivityStorageKey = "swing-analyzer-anonymous-activity";
+const pendingRoadmapStorageKey = "swing-analyzer-pending-roadmap-source";
 
 const statusCopy: Record<AnalysisStatus, { label: string; detail: string }> = {
   uploading: { label: "업로드 중", detail: "비공개 보관함으로 미디어를 보내고 있습니다." },
@@ -496,15 +499,14 @@ export default function Prototype() {
   });
   const [activeRoadmap, setActiveRoadmap] = useState<RoadmapResponse | null>(null);
   const [roadmapSourceRunId, setRoadmapSourceRunId] = useState<string | null>(() =>
-    window.localStorage.getItem("swing-analyzer-pending-roadmap-source"));
+    window.localStorage.getItem(pendingRoadmapStorageKey));
   const [roadmapTarget, setRoadmapTarget] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [anonymousSessionId, setAnonymousSessionId] = useState(() => {
-    const storageKey = "swing-analyzer-anonymous-session";
-    const existing = window.localStorage.getItem(storageKey);
+    const existing = window.localStorage.getItem(anonymousSessionStorageKey);
     if (existing && existing.length >= 16) return existing;
     const generated = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-    window.localStorage.setItem(storageKey, generated);
+    window.localStorage.setItem(anonymousSessionStorageKey, generated);
     return generated;
   });
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -544,29 +546,40 @@ export default function Prototype() {
     return currentSession ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
   }
 
+  function markAnonymousActivity() {
+    if (!session) window.localStorage.setItem(anonymousActivityStorageKey, "true");
+  }
+
   async function restoreMemberState(currentSession: Session) {
     if (restoredAccessTokenRef.current === currentSession.access_token) return;
     restoredAccessTokenRef.current = currentSession.access_token;
     setMemberRestoring(true);
     try {
-      const claimResponse = await fetch(`${apiBaseUrl}/v1/me/claim`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...bearerHeaders(currentSession),
-        },
-        body: JSON.stringify({ anonymous_session_id: anonymousSessionId }),
-      });
-      if (!claimResponse.ok && claimResponse.status !== 409) {
-        throw new Error(await apiErrorMessage(claimResponse));
+      let claimResult: "skipped" | "claimed" | "conflict" = "skipped";
+      if (window.localStorage.getItem(anonymousActivityStorageKey) === "true") {
+        const claimResponse = await fetch(`${apiBaseUrl}/v1/me/claim`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...bearerHeaders(currentSession),
+          },
+          body: JSON.stringify({ anonymous_session_id: anonymousSessionId }),
+        });
+        if (!claimResponse.ok && claimResponse.status !== 409) {
+          throw new Error(await apiErrorMessage(claimResponse));
+        }
+        claimResult = claimResponse.status === 409 ? "conflict" : "claimed";
+        window.localStorage.removeItem(anonymousActivityStorageKey);
       }
       await Promise.all([
         loadLatestConversation(currentSession),
         loadMemberProfile(currentSession),
         loadActiveRoadmap(currentSession),
       ]);
-      if (claimResponse.status === 409) {
+      if (claimResult === "conflict") {
         setNotice("로그인은 복원했지만 현재 익명 기록은 기존 회원 기록과 자동 병합하지 않았습니다.");
+      } else if (claimResult === "claimed") {
+        setNotice("가입 전 코칭 기록과 회원 상태를 이어받았습니다.");
       } else {
         setNotice("회원 세션과 저장된 코칭 상태를 복원했습니다.");
       }
@@ -672,9 +685,10 @@ export default function Prototype() {
       return;
     }
     const nextAnonymousSession = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
-    window.localStorage.setItem("swing-analyzer-anonymous-session", nextAnonymousSession);
+    window.localStorage.setItem(anonymousSessionStorageKey, nextAnonymousSession);
+    window.localStorage.removeItem(anonymousActivityStorageKey);
     setAnonymousSessionId(nextAnonymousSession);
-    window.localStorage.removeItem("swing-analyzer-pending-roadmap-source");
+    window.localStorage.removeItem(pendingRoadmapStorageKey);
     restoredAccessTokenRef.current = null;
     revokeMedia(drafts);
     if (activeRun) revokeMedia(activeRun.media);
@@ -727,7 +741,7 @@ export default function Prototype() {
   function beginRoadmap(run: AnalysisRun) {
     if (!run.analysisRunId) return;
     setRoadmapSourceRunId(run.analysisRunId);
-    window.localStorage.setItem("swing-analyzer-pending-roadmap-source", run.analysisRunId);
+    window.localStorage.setItem(pendingRoadmapStorageKey, run.analysisRunId);
     setRoadmapTarget(profile?.target_swing_style ?? "");
     if (!session) {
       setAuthMode("signup");
@@ -758,7 +772,7 @@ export default function Prototype() {
       });
       if (!response.ok) throw new Error(await apiErrorMessage(response));
       setActiveRoadmap((await response.json()) as RoadmapResponse);
-      window.localStorage.removeItem("swing-analyzer-pending-roadmap-source");
+      window.localStorage.removeItem(pendingRoadmapStorageKey);
       setRoadmapSourceRunId(null);
       setRoadmapOpen(false);
       setNotice("개인 스윙 로드맵을 저장했습니다.");
@@ -841,6 +855,7 @@ export default function Prototype() {
       return;
     }
     if (drafts.length === 0) return;
+    markAnonymousActivity();
 
     const submittedDrafts = drafts;
     const runId = `run-${Date.now()}`;
@@ -912,6 +927,7 @@ export default function Prototype() {
     if (memberRestoring) return;
     const trimmed = chatText.trim();
     if (!trimmed) return;
+    markAnonymousActivity();
     keyboard.hide();
     setChatSubmitting(true);
     setMessages((current) => [...current, { id: Date.now(), role: "user", text: trimmed }]);
@@ -1143,7 +1159,7 @@ export default function Prototype() {
             <>
               <p className="member-menu-state"><strong>{profile?.display_name ?? session.user.email}</strong><span>재로그인하면 같은 프로필과 로드맵을 복원합니다.</span></p>
               <button type="button" disabled={memberRestoring} onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>장기 프로필 편집</button>
-              <button type="button" disabled={memberRestoring} onClick={() => { setMenuOpen(false); setRoadmapSourceRunId(null); window.localStorage.removeItem("swing-analyzer-pending-roadmap-source"); setRoadmapOpen(true); void loadActiveRoadmap(); }}>내 스윙 로드맵</button>
+              <button type="button" disabled={memberRestoring} onClick={() => { setMenuOpen(false); setRoadmapSourceRunId(null); window.localStorage.removeItem(pendingRoadmapStorageKey); setRoadmapOpen(true); void loadActiveRoadmap(); }}>내 스윙 로드맵</button>
               <button type="button" onClick={() => void logout()}>로그아웃</button>
             </>
           ) : (
