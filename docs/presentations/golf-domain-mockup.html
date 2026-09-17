@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>스윙분석기 · 골프 도메인 목업</title>
+  <style>
+    :root {
+      --ink: #171d18;
+      --ink-muted: #647168;
+      --dark: #1c2420;
+      --dark-panel: #28332d;
+      --green: #3ecf8e;
+      --green-deep: #145b3b;
+      --green-wash: #eaf7ee;
+      --paper: #fff;
+      --line: #e0e5e0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #f5f7f4; color: var(--ink); font-family: "Noto Sans KR", "Segoe UI", sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    .screen { width: 1440px; height: 900px; margin: 0 auto; overflow: hidden; background: var(--paper); }
+    .screen[hidden] { display: none; }
+    .header { height: 92px; padding: 0 64px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+    .brand { width: 240px; line-height: 1; }
+    .brand strong { display: block; font-size: 26px; font-weight: 750; letter-spacing: -.055em; }
+    .brand small { display: block; margin-top: 7px; font-size: 10px; letter-spacing: .025em; color: #7a827c; }
+    .nav { display: flex; gap: 38px; align-items: center; font-size: 16px; font-weight: 600; }
+    .nav a { white-space: nowrap; color: #39413b; }
+    .nav a.active { color: var(--green-deep); }
+    .header-actions { display: flex; gap: 22px; align-items: center; justify-content: flex-end; width: 240px; font-size: 15px; font-weight: 600; }
+    .start { display: inline-flex; align-items: center; justify-content: center; min-width: 130px; height: 42px; border-radius: 7px; background: var(--green); color: #102118; font-weight: 750; }
+    .hero { margin: 24px 64px 0; height: 385px; padding: 42px 50px; display: flex; justify-content: space-between; align-items: center; border-radius: 16px; background: var(--dark); color: #fff; }
+    .hero-copy { width: 650px; }
+    .eyebrow { margin: 0 0 17px; color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .055em; }
+    .hero h1 { margin: 0; font-size: 43px; line-height: 1.32; letter-spacing: -.06em; font-weight: 800; }
+    .hero-desc { margin: 18px 0 27px; color: #c6d3cc; font-size: 16px; line-height: 1.55; }
+    .hero-actions { display: flex; gap: 14px; }
+    .hero-actions a { min-width: 176px; height: 50px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 16px; font-weight: 700; }
+    .hero-actions a:first-child { background: var(--green); color: #102118; }
+    .hero-actions a:last-child { background: #303b35; color: #fff; }
+    .chat-entry { width: 412px; height: 290px; padding: 27px 26px; border-radius: 12px; background: var(--dark-panel); }
+    .chat-entry .label { color: var(--green); font-size: 13px; font-weight: 750; }
+    .chat-entry h2 { margin: 18px 0 16px; font-size: 24px; line-height: 1.4; letter-spacing: -.045em; }
+    .chat-example { width: 360px; min-height: 66px; padding: 15px; border-radius: 8px; background: #39463d; color: #e7efe9; font-size: 16px; }
+    .chat-entry small { display: block; margin-top: 17px; color: #afc0b3; font-size: 13px; }
+    .services { padding: 37px 64px 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .section-head h2 { margin: 0; font-size: 27px; letter-spacing: -.055em; }
+    .section-head span { color: #78827a; font-size: 13px; }
+    .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .service { height: 242px; padding: 25px 26px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: flex; flex-direction: column; }
+    .service.used { background: var(--green-wash); border-color: #aad8ba; }
+    .service .number { color: #748078; font-size: 14px; font-weight: 600; }
+    .service.used .number, .service.used .more { color: var(--green-deep); }
+    .service h3 { margin: 15px 0 11px; font-size: 25px; letter-spacing: -.06em; }
+    .service p { margin: 0; color: #66716a; font-size: 15px; }
+    .service .more { margin-top: auto; font-size: 16px; font-weight: 750; }
+    .service .more::after { content: "↗"; margin-left: 8px; font-size: 18px; }
+    .used-content { padding: 30px 64px 0; }
+    .breadcrumb { color: #6d746f; font-size: 13px; }
+    .breadcrumb b { margin: 0 9px; font-weight: 400; color: #b7c0b8; }
+    .used-heading { display: flex; align-items: end; justify-content: space-between; margin: 14px 0 27px; }
+    .used-heading h1 { margin: 0; font-size: 40px; letter-spacing: -.06em; line-height: 1.2; }
+    .used-heading p { margin: 8px 0 0; color: var(--ink-muted); font-size: 15px; }
+    .sample-badge { align-self: center; padding: 9px 13px; border-radius: 5px; background: var(--green-wash); color: var(--green-deep); font-size: 13px; font-weight: 750; }
+    .used-layout { display: grid; grid-template-columns: 948px 336px; gap: 28px; }
+    .search-bar { height: 70px; border: 1px solid #d9e2da; border-radius: 9px; padding: 8px; display: flex; align-items: center; gap: 12px; }
+    .search-icon { padding: 0 9px 0 12px; font-size: 22px; color: #78827a; }
+    .search-bar input { flex: 1; border: 0; outline: 0; font-size: 17px; color: var(--ink); }
+    .search-bar input::placeholder { color: #9ca8a0; }
+    .search-bar button { width: 104px; height: 50px; border: 0; border-radius: 7px; background: var(--green); color: #102118; font-weight: 750; }
+    .filters { height: 67px; display: flex; align-items: center; gap: 9px; }
+    .filters button { padding: 9px 15px; border-radius: 6px; border: 1px solid var(--line); color: #526057; background: #fff; font-size: 14px; }
+    .filters button.active { color: var(--green-deep); border-color: #b0dbbc; background: var(--green-wash); font-weight: 700; }
+    .filters .sort { margin-left: auto; color: #66716a; font-size: 14px; }
+    .list-head { height: 38px; display: grid; grid-template-columns: 430px 200px 95px 1fr; align-items: center; padding: 0 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: #7a857c; font-size: 13px; }
+    .list-head span:last-child { text-align: right; }
+    .listing { height: 92px; display: grid; grid-template-columns: 430px 200px 95px 1fr; align-items: center; padding: 0 18px; border-bottom: 1px solid var(--line); }
+    .product { display: flex; align-items: center; gap: 17px; }
+    .product-code { flex: none; width: 72px; height: 72px; display: grid; place-items: center; border-radius: 7px; background: #edf3ee; color: #47705a; font: 700 16px Inter, sans-serif; letter-spacing: .02em; }
+    .product strong { display: block; font-size: 17px; letter-spacing: -.045em; }
+    .product small { display: block; margin-top: 6px; color: #849087; font-size: 12px; }
+    .spec { color: #67736a; font-size: 14px; }
+    .grade { font-size: 14px; font-weight: 750; color: var(--green-deep); }
+    .price { justify-self: end; font-size: 18px; font-weight: 750; letter-spacing: -.025em; }
+    .recommend { height: 637px; padding: 28px 27px; border-radius: 12px; background: var(--dark); color: #fff; display: flex; flex-direction: column; }
+    .recommend .label { color: var(--green); font-size: 12px; font-weight: 750; letter-spacing: .04em; }
+    .recommend h2 { margin: 20px 0 0; font-size: 29px; line-height: 1.38; letter-spacing: -.05em; }
+    .recommend p { margin: 16px 0 0; color: #b8c8bc; font-size: 15px; line-height: 1.6; }
+    .recommend-line { margin: auto 0 21px; border-top: 1px solid #4a5950; padding-top: 22px; color: #c9d5cb; font-size: 14px; line-height: 1.8; }
+    .recommend a { display: grid; place-items: center; height: 52px; border-radius: 7px; background: var(--green); color: #102118; font-size: 16px; font-weight: 750; }
+    @media (max-width: 1440px) { .screen { margin: 0; } }
+  </style>
+</head>
+<body>
+  <section class="screen" id="home">
+    <header class="header">
+      <a class="brand" href="#home"><strong>스윙분석기</strong><small>AI GOLF COACH</small></a>
+      <nav class="nav" aria-label="서비스 메뉴">
+        <a class="active" href="#home">메인</a><a href="#home">스윙 분석</a><a href="#home">필드 부킹</a><a href="#used">중고채</a><a href="#home">커뮤니티</a>
+      </nav>
+      <div class="header-actions"><a href="#home">로그인</a><a class="start" href="#home">분석 시작</a></div>
+    </header>
+    <main>
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">AI SWING ANALYSIS</p>
+          <h1>내 스윙을 분석하고<br>골프 서비스를 탐색하세요</h1>
+          <p class="hero-desc">채팅으로 고민을 묻고, 스윙 기록과 개인 로드맵을 이어갑니다.</p>
+          <div class="hero-actions"><a href="#home">스윙 분석 시작</a><a href="#services">서비스 둘러보기</a></div>
+        </div>
+        <div class="chat-entry">
+          <span class="label">AI 코치</span>
+          <h2>지금 가장 고민되는<br>스윙은 무엇인가요?</h2>
+          <div class="chat-example">“7번 아이언이 왼쪽으로 가요”</div>
+          <small>가입 전에도 질문할 수 있습니다</small>
+        </div>
+      </div>
+      <section class="services" id="services">
+        <div class="section-head"><h2>서비스 둘러보기</h2><span>확장 서비스 · 디자인 목업</span></div>
+        <div class="service-grid">
+          <a class="service" href="#home"><span class="number">01</span><h3>필드 부킹</h3><p>지역과 일정으로 라운드를 찾습니다.</p><span class="more">부킹 보기</span></a>
+          <a class="service used" href="#used"><span class="number">02</span><h3>중고 골프채</h3><p>내 스윙을 기준으로 장비를 탐색합니다.</p><span class="more">매물 목록 보기</span></a>
+          <a class="service" href="#home"><span class="number">03</span><h3>커뮤니티</h3><p>골프 경험과 질문을 함께 나눕니다.</p><span class="more">커뮤니티 보기</span></a>
+        </div>
+      </section>
+    </main>
+  </section>
+  <section class="screen" id="used" hidden>
+    <header class="header">
+      <a class="brand" href="#home"><strong>스윙분석기</strong><small>AI GOLF COACH</small></a>
+      <nav class="nav" aria-label="서비스 메뉴">
+        <a href="#home">메인</a><a href="#home">스윙 분석</a><a href="#home">필드 부킹</a><a class="active" href="#used">중고채</a><a href="#home">커뮤니티</a>
+      </nav>
+      <div class="header-actions"><a href="#used">로그인</a><a class="start" href="#home">분석 시작</a></div>
+    </header>
+    <main class="used-content">
+      <div class="breadcrumb"><a href="#home">홈</a><b>/</b>중고 골프채</div>
+      <div class="used-heading">
+        <div><h1>중고 골프채</h1><p>카테고리와 사양을 확인하고, 스윙 고민과 연결합니다.</p></div>
+        <span class="sample-badge">샘플 매물 · 디자인 목업</span>
+      </div>
+      <div class="used-layout">
+        <div>
+          <div class="search-bar"><span class="search-icon" aria-hidden="true">⌕</span><input aria-label="중고채 검색" placeholder="클럽 종류, 샤프트, 사양 검색"><button type="button">검색</button></div>
+          <div class="filters"><button class="active" type="button">전체</button><button type="button">드라이버</button><button type="button">아이언</button><button type="button">퍼터</button><button type="button">웨지</button><span class="sort">최신 등록순 ▾</span></div>
+          <div class="list-head"><span>상품</span><span>사양</span><span>상태</span><span>가격</span></div>
+          <div class="listing"><div class="product"><span class="product-code">DR</span><div><strong>남성 드라이버 10.5°</strong><small>샘플 매물 001</small></div></div><span class="spec">SR · 45.5in</span><span class="grade">A</span><span class="price">₩280,000</span></div>
+          <div class="listing"><div class="product"><span class="product-code">IR</span><div><strong>아이언 세트 5-P</strong><small>샘플 매물 002</small></div></div><span class="spec">스틸 S · 6개 구성</span><span class="grade">B+</span><span class="price">₩490,000</span></div>
+          <div class="listing"><div class="product"><span class="product-code">PT</span><div><strong>블레이드 퍼터 34in</strong><small>샘플 매물 003</small></div></div><span class="spec">스틸 · 오른손</span><span class="grade">A</span><span class="price">₩180,000</span></div>
+          <div class="listing"><div class="product"><span class="product-code">WG</span><div><strong>웨지 52°</strong><small>샘플 매물 004</small></div></div><span class="spec">스틸 S · 52°</span><span class="grade">B</span><span class="price">₩95,000</span></div>
+          <div class="listing"><div class="product"><span class="product-code">UT</span><div><strong>유틸리티 4번</strong><small>샘플 매물 005</small></div></div><span class="spec">R · 22°</span><span class="grade">A-</span><span class="price">₩210,000</span></div>
+        </div>
+        <aside class="recommend">
+          <span class="label">SWING FIRST</span>
+          <h2>장비를 고르기 전<br>스윙 고민부터</h2>
+          <p>중고채 목록을 보다가 궁금한 점이 생기면 AI 코치에게 질문합니다.</p>
+          <div class="recommend-line">스윙 질문<br>촬영·분석<br>개인 로드맵</div>
+          <a href="#home">AI 코치에게 묻기</a>
+        </aside>
+      </div>
+    </main>
+  </section>
+  <script>
+    function showScreen() {
+      const used = location.hash === "#used";
+      document.getElementById("home").hidden = used;
+      document.getElementById("used").hidden = !used;
+    }
+    addEventListener("hashchange", showScreen);
+    showScreen();
+  </script>
+</body>
+</html>
